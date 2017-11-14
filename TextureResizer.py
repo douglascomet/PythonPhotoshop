@@ -107,22 +107,8 @@ class Main(QtGui.QMainWindow):
         return num != 0 and ((num & (num - 1)) == 0)
 
     def textureResize(self):
+
         psFileLocation = "C:\\Users\dhalley\\Desktop\\GarageScene"
-
-        # psApp = comtypes.client.CreateObject(
-        #     'Photoshop.Application', dynamic=True)
-        # psApp.Visible = True
-
-        # #Set the default unit to pixels!
-        # psApp.Preferences.RulerUnits = 1
-
-        # # Define 32bit Targa save options
-        # targaSettings = comtypes.client.CreateObject('Photoshop.TargaSaveOptions')
-        # PsTargaBitsPerPixels = 24
-        # targaSettings.Resolution = PsTargaBitsPerPixels
-        # targaSettings.AlphaChannels = False
-        # targaSettings.RLECompression = False
-
 
         ext = (".tga", ".png")
 
@@ -130,7 +116,7 @@ class Main(QtGui.QMainWindow):
         countTileable = 0
 
         # variable to check size of images by
-        targetSize = 1024
+        targetSize = 512
 
         # list used to collect images larger than targetSize
         largerThanTargetSize = []
@@ -159,6 +145,8 @@ class Main(QtGui.QMainWindow):
                             # check if file extension exists in extension list
                             if x.lower().endswith( ext ):
                                 
+
+
                                 # define imagePath string
                                 imagePath = os.path.join( dirname, d, x )
 
@@ -177,15 +165,39 @@ class Main(QtGui.QMainWindow):
 
                                         if sizeOfImage[ 0 ] > targetSize:
                                             testPrint = testPrint + imagePath + '\n'
-                                            # largerThanTargetSize.append( imagePath )
+                                            largerThanTargetSize.append( imagePath )
                                 
-        self.popupOkWindow(testPrint)
+
+        psApp = comtypes.client.CreateObject('Photoshop.Application', dynamic=True)
+        psApp.Visible = True
+
+        #Set the default unit to pixels!
+        psApp.Preferences.RulerUnits = 1
+
+        test = psApp.Open(largerThanTargetSize[0])
+        # psApp.Application.ActiveDocument
+        test.resizeImage(targetSize, targetSize)
+
+        psApp.activeDocument = test
+
+        tgaOptions = comtypes.client.CreateObject(
+            'Photoshop.TargaSaveOptions', dynamic=True)
+        tgaOptions.Resolution = 24
+        tgaOptions.AlphaChannels = False
+        tgaOptions.RLECompression = False
+
+        filename, file_extension = os.path.splitext(largerThanTargetSize[0])
+
+        newFileName = filename + '_' + \
+            str(targetSize) + str(2) + file_extension
+
+        test.SaveAs(newFileName, tgaOptions, True)
+
         # print 'Number of Tileable Files:', countTileable
         # print 'Large Files List Size:', len( largerThanTargetSize )
         # # print 'Large Files List:', largerThanTargetSize
 
-        # # for x in largerThanTargetSize[ 0 ]:
-        # #     print x
+        
         # psApp.Open(largerThanTargetSize[0])
         # test=psApp.Application.ActiveDocument
         # test.resizeImage(targetSize, targetSize)
@@ -201,6 +213,30 @@ class Main(QtGui.QMainWindow):
         #     psApp.activeDocument.SaveAs((newFileName + file_extension), targaSettings, True, 2)
         # except COMError as e:
         #     print e
+
+    def launchPhotoshop(self):
+        
+        psApp = comtypes.client.CreateObject('Photoshop.Application')
+        psApp.Visible = True
+
+        #Set the default unit to pixels!
+        psApp.Preferences.RulerUnits = 1
+
+        return psApp
+
+    def saveTGA(self, doc, tgaFile, saveAlpha=False):
+        
+        tgaOptions = comtypes.client.CreateObject(
+            'Photoshop.TargaSaveOptions')
+        tgaOptions.Resolution = 24
+        tgaOptions.AlphaChannels = False
+        tgaOptions.RLECompression = False
+
+        if saveAlpha:
+            tgaOptions.Resolution = 32
+            tgaOptions.AlphaChannels = True
+
+        doc.SaveAs(tgaFile, tgaOptions, True)
 
     def popupOkWindow(self, message):
         """ Generic popup window with an OK button and can display message based on use """
