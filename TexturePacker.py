@@ -21,6 +21,7 @@ from PIL import Image
 from PyQt4 import QtGui
 from PyQt4 import QtCore
 
+
 class Main(QtGui.QMainWindow):
     """
     The class that contains, defines, and creates the UI
@@ -68,7 +69,7 @@ class Main(QtGui.QMainWindow):
         self.inputChannel_widget.setLayout(QtGui.QVBoxLayout())
 
         channelInputs_lbl = QtGui.QLabel("Channel Inputs")
-        
+
         self.rChannel_widget = QtGui.QWidget()
         self.rChannel_widget.setLayout(QtGui.QHBoxLayout())
 
@@ -87,7 +88,7 @@ class Main(QtGui.QMainWindow):
         self.aChannel_checkBox = QtGui.QCheckBox("A Channel")
         self.aChannel_checkBox.setChecked(False)
 
-        self.rChannel_le = QtGui.QLineEdit("")        
+        self.rChannel_le = QtGui.QLineEdit("")
         self.gChannel_le = QtGui.QLineEdit("")
         self.bChannel_le = QtGui.QLineEdit("")
         self.aChannel_le = QtGui.QLineEdit("")
@@ -146,7 +147,7 @@ class Main(QtGui.QMainWindow):
         self.centralWidget.layout().addWidget(self.inputChannel_widget)
         self.centralWidget.layout().addWidget(self.packedTexture_widget)
         self.centralWidget.layout().addWidget(self.processTextures_btn)
-        
+
         # sets central widget for PyQt window
         self.setCentralWidget(self.centralWidget)
 
@@ -158,7 +159,8 @@ class Main(QtGui.QMainWindow):
         self.addDirectory.clicked.connect(lambda: self.getDirectory())
         self.preProcessTextures_btn.clicked.connect(
             lambda: self.preProcessTextures(str(self.dir_lbl.text())))
-        self.processTextures_btn.clicked.connect(lambda: self.textureResize(str(self.dir_lbl.text())))
+        self.processTextures_btn.clicked.connect(
+            lambda: self.textureResize(str(self.dir_lbl.text())))
         self.aChannel_checkBox.toggled.connect(
             lambda: self.toggleAlphaInput(self.aChannel_checkBox))
 
@@ -171,12 +173,11 @@ class Main(QtGui.QMainWindow):
         print self.dir_lbl.text()
 
     def toggleAlphaInput(self, checkBox):
-        
+
         if checkBox.isChecked():
             self.aChannel_le.setEnabled(True)
         else:
             self.aChannel_le.setEnabled(False)
-
 
     # Author: A.Polino - https://code.activestate.com/recipes/577514-chek-if-a-number-is-a-power-of-two/
     def is_power2(self, num):
@@ -202,210 +203,178 @@ class Main(QtGui.QMainWindow):
                         print type(base_file)
                         OriginalFileNamePath = os.path.join(dirpath, filename)
                         print OriginalFileNamePath
-                        NewFileNamePath = os.path.join(dirpath, base_file + '.tga')
+                        NewFileNamePath = os.path.join(
+                            dirpath, base_file + '.tga')
                         #in order to successfully rename a file you need the file joined with the path
                         os.rename(OriginalFileNamePath, NewFileNamePath)
-                        list_of_files[filename] = os.sep.join([dirpath, filename])
+                        list_of_files[filename] = os.sep.join(
+                            [dirpath, filename])
                         count += 1
             if count == 0:
-                self.popupOkWindow("There were not any files that needed their extensions formatted")
+                self.popupOkWindow(
+                    "There were not any files that needed their extensions formatted")
             else:
-                self.popupOkWindow(str(count) + "Files had their extenstions changed to .tga")
+                self.popupOkWindow(
+                    str(count) + "Files had their extenstions changed to .tga")
             # for x, y in list_of_files.iteritems():
             #     print 'File Name: ', x
             #     print 'File Path: ', y
-        
+
         else:
             self.popupOkWindow('Invalid Path')
 
     def textureResize(self, path):
 
-        psFileLocation = path #"C:\\Users\\dhalley\\Desktop\\GarageScene"
+        psFileLocation = path
 
         ext = (".tga", ".png")
 
         # counterer for number of files
         countTileable = 0
 
-        # variable to check size of images by
-        targetSize = 512
-
-        # list used to collect images larger than targetSize
-        largerThanTargetSize = []
-
-        testPrint = ''
-
         rFound = ''
         gFound = ''
         bFound = ''
         aFound = ''
 
-        # for x in os.listdir(psFileLocation):
-
-        #     if self.rChannel_le.text():
-        #         if str(self.rChannel_le.text()) in x:
-        #             print x
-        #             rFound = True
-
-        # if not rFound:
-        #     self.popupOkWindow('Not Found')
-                    
-
         # walk through directory, sub directories, and files
         for (dirname, dirs, files) in os.walk(psFileLocation):
-            
-            # print dirname
+
+            print dirname
             # if not dirs:
             #     print 'asdfasdfasdf' + str(dirs)
             # print files
-
             if dirs:
-
-                # iterate over list of subdirectories
+                # print 'dirs'
                 for d in dirs:
-                    
-                    # precautionary check to ensure is valid path
-                    if os.path.isdir(os.path.join(dirname, d)):
-
-                        # iterate over entries in found subdirectory
-                        for x in os.listdir(os.path.join(dirname, d)):
+                    print d
+                    for x in os.listdir(os.path.join(dirname, d)):
+                        if os.path.isfile( os.path.join( os.path.join( dirname, d, x ) ) ):
+                            # check if file extension exists in extension list
+                            if x.lower().endswith('.tga'):
                                 
-                            # check if x during iteration is a file
-                            if os.path.isfile(os.path.join(os.path.join(dirname, d, x))):
-                                
-                                print x
+                                #store current path
+                                currentPath = os.path.join(
+                                    os.path.join(dirname, d, x))
 
-            else:
-                
-                # iterate over list of subdirectories
-                for d in files:
-                                
-                    # check if x during iteration is a file
-                    if os.path.isfile(os.path.join(dirname, d)):
+                                if self.rChannel_le.text():
+                                    if str(self.rChannel_le.text()) in x:
+                                        print x
+                                        rFound = currentPath
 
-                        # check if file extension exists in extension list
-                        if d.lower().endswith('.tga'):
-                            
-                            # print d
+                                if self.bChannel_le.text():
+                                    if str(self.bChannel_le.text()) in x:
+                                        print x
+                                        bFound = currentPath
 
-                            if self.rChannel_le.text():
-                                if str(self.rChannel_le.text()) in d:
-                                    print d
-                                    rFound = os.path.join(dirname, d)
+                                if self.gChannel_le.text():
+                                    if str(self.gChannel_le.text()) in x:
+                                        print x
+                                        gFound = currentPath
 
-                            if self.bChannel_le.text():
-                                if str(self.bChannel_le.text()) in d:
-                                    print d
-                                    bFound = os.path.join(dirname, d)
+                                if self.aChannel_le.text():
+                                    if str(self.aChannel_le.text()) in x:
+                                        print x
+                                        aFound = currentPath
 
-                            if self.gChannel_le.text():
-                                if str(self.gChannel_le.text()) in d:
-                                    print d
-                                    gFound = os.path.join(dirname, d)
+                                # check if a value for R, G, and B is found
+                                if rFound and gFound and bFound:
+                                    
+                                    # get used version of Windows
+                                    osVersion = self.checkWindowsVersion()
 
-                            if self.aChannel_le.text():
-                                if str(self.aChannel_le.text()) in d:
-                                    print d
-                                    aFound = os.path.join(dirname, d)
+                                    # open Photoshop
+                                    psApp = self.launchPhotoshop(osVersion)
 
-                if rFound and gFound and bFound:
-                    osVersion = self.checkWindowsVersion()
-                    print self.checkPhotoshopVersion()
-                    psApp = self.launchPhotoshop(osVersion)
+                                    r = psApp.Open(rFound)
+                                    docWidth = r.width
+                                    docHeight = r.height
+                                    r.selection.selectAll()
+                                    r.activeLayer.Copy()
 
-                    r = psApp.Open(rFound)
-                    
-                    r.selection.selectAll()
-                    r.activeLayer.Copy()
+                                    blankDoc = psApp.Documents.Add(
+                                        docWidth, docHeight, 72, "new_document", 2, 1, 1)
 
-                    blankDoc = psApp.Documents.Add(1024, 1024, 72, "new_document", 2, 1, 1)
+                                    # blankDoc.channels['Red'] - equivalent to calling channel by name
+                                    # activeChannels must receive an array
+                                    blankDoc.activeChannels = [blankDoc.channels['Red']]
+                                    blankDoc.Paste()
 
-                    # blankDoc.channels['Red'] - equivalent to calling channel by name
-                    # activeChannels must receive an array
-                    blankDoc.activeChannels = [blankDoc.channels['Red']]
-                    blankDoc.Paste()
+                                    g = psApp.Open(gFound)
+                                    g.selection.selectAll()
+                                    g.activeLayer.Copy()
 
-                    g = psApp.Open(gFound)
-                    g.selection.selectAll()
-                    g.activeLayer.Copy()
+                                    psApp.activeDocument = blankDoc
+                                    blankDoc.activeChannels = [blankDoc.channels['Green']]
+                                    blankDoc.Paste()
 
-                    psApp.activeDocument = blankDoc
-                    blankDoc.activeChannels = [blankDoc.channels['Green']]
-                    blankDoc.Paste()
+                                    b = psApp.Open(bFound)
+                                    b.selection.selectAll()
+                                    b.activeLayer.Copy()
 
-                    b = psApp.Open(bFound)
-                    b.selection.selectAll()
-                    b.activeLayer.Copy()
+                                    psApp.activeDocument = blankDoc
+                                    blankDoc.activeChannels = [blankDoc.channels['Blue']]
+                                    blankDoc.Paste()
 
-                    psApp.activeDocument = blankDoc
-                    blankDoc.activeChannels = [blankDoc.channels['Blue']]
-                    blankDoc.Paste()
+                                    # close original version without saving
+                                    r.Close(2)
+                                    g.Close(2)
+                                    b.Close(2)
 
-                if aFound:
-                    a = psApp.Open(aFound)
-                    a.selection.selectAll()
-                    a.activeLayer.Copy()
+                                    if aFound:
+                                        a = psApp.Open(aFound)
+                                        a.selection.selectAll()
+                                        a.activeLayer.Copy()
 
-                    psApp.activeDocument = blankDoc
-                    blankDoc.channels.add()
-                    blankDoc.Name = 'Alpha 1'
-                    blankDoc.Kind = 2  # = PsChannelType.psMaskedAreaAlphaChannel
-                    blankDoc.Paste()
+                                        psApp.activeDocument = blankDoc
+                                        blankDoc.channels.add()
+                                        # blankDoc.Name = 'Alpha 1'
+                                        # blankDoc.Kind = 2  # = PsChannelType.psMaskedAreaAlphaChannel
+                                        blankDoc.Paste()
 
-                # self.saveTGA(osVersion, psApp, newFileName)
+                                        a.Close(2)
 
-                else:
-                    self.popupOkWindow('POOP')
+                                    if self.packedTexture_le:
 
-                                # # check if file extension exists in extension list
-                                # if x.lower().endswith(ext):
+                                        splitPath, splitPathFileName = os.path.split(currentPath)
 
-                                #     # define imagePath string
-                                #     imagePath = os.path.join(dirname, d, x)
-
-                                #     # use PIL to create Image object
-                                #     with Image.open(imagePath) as im:
-                                #         sizeOfImage = im.size
-
-                                #     # sizeOfImage returns tuple (width, height)
-                                #     # check that image is square by comparing width and height
-                                #     if sizeOfImage[0] == sizeOfImage[ 1 ]:
+                                        fileName, fileExt = os.path.splitext(splitPathFileName)
                                         
-                                #         # if width/height are equal, use either value to check if power of 2
-                                #         if self.is_power2(sizeOfImage[ 0 ]):
-                                #             print x + ' - ' + '{0}'.format(sizeOfImage)
-                                #             countTileable = countTileable + 1
+                                        # gets first element of split from '_' based on naming convention at BBA
+                                        splitFileName = fileName.split('_')
 
-                                #             if sizeOfImage[ 0 ] > targetSize:
-                                #                 testPrint = testPrint + imagePath + '\n'
-                                #                 largerThanTargetSize.append(imagePath)
-                                
-        # osVersion = self.checkWindowsVersion()
-        # print self.checkPhotoshopVersion()
-        # psApp = self.launchPhotoshop(osVersion)
+                                        if len(splitFileName) > 1:
+                                            splitFileName.pop()
+                                            splitFileName = '_'.join(splitFileName)
+                                        else:
+                                            splitFileName = splitFileName[0]
 
-        # version = psApp.Version
-        # print version
+                                        newFileName = str(splitFileName) + str(self.packedTexture_le.text()) + fileExt
 
-        # print version
-        # print psApp.path
+                                        NewFileNamePath = os.path.join(splitPath, newFileName)
 
-        # for x in largerThanTargetSize:
-        #     test = psApp.Open(x)
+                                        # if there is an alpha input be sure to export TGA with alpha option on
+                                        if aFound:
+                                            self.saveTGA(osVersion, psApp, NewFileNamePath, True)
+                                        else:
+                                            self.saveTGA(osVersion, psApp, NewFileNamePath)
 
-        #     psApp.Application.ActiveDocument
+                                        blankDoc.Close(2)
 
-        #     test.resizeImage(targetSize, targetSize)
-            
-        #     filename, file_extension = os.path.splitext(x)
-
-        #     newFileName = filename + '_' + \
-        #         str(targetSize) + file_extension
-        #     self.saveTGA(osVersion, psApp, newFileName)
-
-        #     # close original version without saving
-        #     test.Close(2)
-
+                                        # reset variables after packed texture is exported
+                                        rFound = ''
+                                        gFound = ''
+                                        bFound = ''
+                                        aFound = ''
+                                    else:
+                                        self.popupOkWindow('No Suffix for Packed Texture')
+                        
+                    print '^ Skipped'
+                    rFound = ''
+                    gFound = ''
+                    bFound = ''
+                    aFound = ''
+                    
     def checkWindowsVersion(self):
         import platform
         currentPlatform = platform.platform()
@@ -419,10 +388,10 @@ class Main(QtGui.QMainWindow):
             self.popupOkWindow('Untested OS. Tool only works on Windows')
 
     def checkPhotoshopVersion(self):
-        
+
         #default Photoshop install path
         if self.osPath('C:\\Program Files\\Adobe\\'):
-            
+
             # get list of folders in default Photoshop install path
             listdir = self.getPath('C:\\Program Files\\Adobe\\')
 
@@ -430,14 +399,14 @@ class Main(QtGui.QMainWindow):
             foundItems = [x for x in listdir if 'Photoshop' in x]
 
             if foundItems:
-                
+
                 # check how many versions of Photoshop are installed
                 if len(foundItems) == 1:
                     foundPhotoshop = str(foundItems[0])
 
                     # check if a CC version of Photoshop is installed
                     if 'CC' in foundPhotoshop:
-                        
+
                         # remove spaces from version of Photoshop
                         splitPhotoshop = foundPhotoshop.split(' ')
 
@@ -470,7 +439,8 @@ class Main(QtGui.QMainWindow):
                         if version:
                             return version
                         else:
-                            self.popupOkWindow('Error getting installed Photoshop Version')
+                            self.popupOkWindow(
+                                'Error getting installed Photoshop Version')
                     else:
                         # if version.startswith('12'):
                         #     version = '12'
@@ -478,18 +448,19 @@ class Main(QtGui.QMainWindow):
                         #     version = '13'
                         self.popupOkWindow('Non CC Version of PS')
                 else:
-                    self.popupOkWindow('Multiple Versions of Photoshop installed')
+                    self.popupOkWindow(
+                        'Multiple Versions of Photoshop installed')
             else:
                 self.popupOkWindow('Photoshop not installed')
         else:
             self.popupOkWindow(
                 'Adobe Software not installed in default directory')
 
-
     def launchPhotoshop(self, osVer):
-        
+
         # if osVer == '10':
-        psApp = comtypes.client.CreateObject('Photoshop.Application', dynamic = True)
+        psApp = comtypes.client.CreateObject(
+            'Photoshop.Application', dynamic=True)
         psApp.Visible = True
 
         #Set the default unit to pixels!
@@ -498,7 +469,7 @@ class Main(QtGui.QMainWindow):
         return psApp
 
     def saveTGA(self, osVer, doc, tgaFile, saveAlpha=False):
-        
+
         if osVer == '10':
             tgaOptions = comtypes.client.CreateObject(
                 'Photoshop.TargaSaveOptions', dynamic=True)
@@ -531,7 +502,7 @@ class Main(QtGui.QMainWindow):
         popupWindow.setStandardButtons(QtGui.QMessageBox.Ok)
 
         popupWindow.exec_()
-    
+
     #get list of directories if path exists
     def getPath(self, filePath):
         if self.osPath(filePath):
