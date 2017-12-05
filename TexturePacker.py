@@ -43,7 +43,7 @@ class Main(QtGui.QMainWindow):
         #==============================================================================
 
         # window title
-        self.setWindowTitle("TextureResizer")
+        self.setWindowTitle("TexturePacker")
 
         #==============================================================================
         # PYQT Widget Defintions
@@ -55,9 +55,17 @@ class Main(QtGui.QMainWindow):
 
         self.addDirectory = QtGui.QPushButton("Choose Directory")
 
-        # widget for project location radio buttons and year combobox
-        self.textureSizeWidget = QtGui.QWidget()
-        self.textureSizeWidget.setLayout(QtGui.QHBoxLayout())
+        self.inputDir_widget = QtGui.QWidget()
+        self.inputDir_widget.setLayout(QtGui.QVBoxLayout())
+
+        self.dirName_lbl = QtGui.QLabel("Selected Directory:")
+        self.dirName_lbl.setAlignment(QtCore.Qt.AlignCenter)
+
+        self.dir_lbl = QtGui.QLabel("")
+        self.dir_lbl.setAlignment(QtCore.Qt.AlignCenter)
+
+        self.inputChannel_widget = QtGui.QWidget()
+        self.inputChannel_widget.setLayout(QtGui.QVBoxLayout())
 
         channelInputs_lbl = QtGui.QLabel("Channel Inputs")
         
@@ -73,15 +81,17 @@ class Main(QtGui.QMainWindow):
         self.aChannel_widget = QtGui.QWidget()
         self.aChannel_widget.setLayout(QtGui.QHBoxLayout())
 
-        self.rChannel_checkBox = QtGui.QCheckBox("R Channel")
-        self.gChannel_checkBox = QtGui.QCheckBox("G Channel")
-        self.bChannel_checkBox = QtGui.QCheckBox("B Channel")
+        self.rChannel_lbl = QtGui.QLabel("R Channel")
+        self.gChannel_lbl = QtGui.QLabel("G Channel")
+        self.bChannel_lbl = QtGui.QLabel("B Channel")
         self.aChannel_checkBox = QtGui.QCheckBox("A Channel")
+        self.aChannel_checkBox.setChecked(False)
 
         self.rChannel_le = QtGui.QLineEdit("")        
         self.gChannel_le = QtGui.QLineEdit("")
         self.bChannel_le = QtGui.QLineEdit("")
         self.aChannel_le = QtGui.QLineEdit("")
+        self.aChannel_le.setEnabled(False)
 
         channelSearchText = 'Enter Prefix or Suffix'
 
@@ -90,13 +100,13 @@ class Main(QtGui.QMainWindow):
         self.bChannel_le.setPlaceholderText(channelSearchText)
         self.aChannel_le.setPlaceholderText(channelSearchText)
 
-        self.rChannel_widget.layout().layout().addWidget(self.rChannel_checkBox)
+        self.rChannel_widget.layout().layout().addWidget(self.rChannel_lbl)
         self.rChannel_widget.layout().layout().addWidget(self.rChannel_le)
 
-        self.gChannel_widget.layout().layout().addWidget(self.gChannel_checkBox)
+        self.gChannel_widget.layout().layout().addWidget(self.gChannel_lbl)
         self.gChannel_widget.layout().layout().addWidget(self.gChannel_le)
 
-        self.bChannel_widget.layout().layout().addWidget(self.bChannel_checkBox)
+        self.bChannel_widget.layout().layout().addWidget(self.bChannel_lbl)
         self.bChannel_widget.layout().layout().addWidget(self.bChannel_le)
 
         self.aChannel_widget.layout().layout().addWidget(self.aChannel_checkBox)
@@ -108,23 +118,33 @@ class Main(QtGui.QMainWindow):
         for x in [4096, 2048, 1024, 512, 256, 128, 64]:
             self.textureSize_comboBox.addItem(QtCore.QString(str(x)))
 
-        self.dirName_lbl = QtGui.QLabel("")
-        self.dirName_lbl.setAlignment(QtCore.Qt.AlignCenter)
+        self.packedTexture_widget = QtGui.QWidget()
+        self.packedTexture_widget.setLayout(QtGui.QHBoxLayout())
+
+        self.packedTexture_lbl = QtGui.QLabel("Packed Texture")
+        self.packedTexture_le = QtGui.QLineEdit("")
+        self.packedTexture_le.setPlaceholderText('Enter Suffix Here')
+
+        self.packedTexture_widget.layout().addWidget(self.packedTexture_lbl)
+        self.packedTexture_widget.layout().addWidget(self.packedTexture_le)
 
         self.preProcessTextures_btn = QtGui.QPushButton("Pre-Process Textures")
         self.processTextures_btn = QtGui.QPushButton("Process Textures")
 
-        self.textureSizeWidget.layout().layout().addWidget(channelInputs_lbl)
-        self.textureSizeWidget.layout().layout().addWidget(self.textureSize_comboBox)
+        self.inputDir_widget.layout().layout().addWidget(self.dirName_lbl)
+        self.inputDir_widget.layout().layout().addWidget(self.dir_lbl)
+
+        self.inputChannel_widget.layout().addWidget(self.rChannel_widget)
+        self.inputChannel_widget.layout().addWidget(self.gChannel_widget)
+        self.inputChannel_widget.layout().addWidget(self.bChannel_widget)
+        self.inputChannel_widget.layout().addWidget(self.aChannel_widget)
+        # self.inputChannel_widget.layout().layout().addWidget(self.textureSize_comboBox)
 
         # adds project widget and tools widget to central widget
         self.centralWidget.layout().addWidget(self.addDirectory)
-        self.centralWidget.layout().addWidget(self.dirName_lbl)
-        self.centralWidget.layout().addWidget(self.rChannel_widget)
-        self.centralWidget.layout().addWidget(self.gChannel_widget)
-        self.centralWidget.layout().addWidget(self.bChannel_widget)
-        self.centralWidget.layout().addWidget(self.aChannel_widget)
-        self.centralWidget.layout().addWidget(self.preProcessTextures_btn)
+        self.centralWidget.layout().addWidget(self.inputDir_widget)
+        self.centralWidget.layout().addWidget(self.inputChannel_widget)
+        self.centralWidget.layout().addWidget(self.packedTexture_widget)
         self.centralWidget.layout().addWidget(self.processTextures_btn)
         
         # sets central widget for PyQt window
@@ -137,16 +157,25 @@ class Main(QtGui.QMainWindow):
         # triggers for buttons
         self.addDirectory.clicked.connect(lambda: self.getDirectory())
         self.preProcessTextures_btn.clicked.connect(
-            lambda: self.preProcessTextures(str(self.dirName_lbl.text())))
-        self.processTextures_btn.clicked.connect(lambda: self.textureResize(str(self.dirName_lbl.text())))
+            lambda: self.preProcessTextures(str(self.dir_lbl.text())))
+        self.processTextures_btn.clicked.connect(lambda: self.textureResize(str(self.dir_lbl.text())))
+        self.aChannel_checkBox.toggled.connect(
+            lambda: self.toggleAlphaInput(self.aChannel_checkBox))
 
     # creates QFileDialog to find designated folder
     def getDirectory(self):
         dlg = QtGui.QFileDialog.getExistingDirectory(
             None, 'Select a folder:', 'C:\\Users\\desktop', QtGui.QFileDialog.ShowDirsOnly)
 
-        self.dirName_lbl.setText(dlg)
-        print self.dirName_lbl.text()
+        self.dir_lbl.setText(dlg)
+        print self.dir_lbl.text()
+
+    def toggleAlphaInput(self, checkBox):
+        
+        if checkBox.isChecked():
+            self.aChannel_le.setEnabled(True)
+        else:
+            self.aChannel_le.setEnabled(False)
 
 
     # Author: A.Polino - https://code.activestate.com/recipes/577514-chek-if-a-number-is-a-power-of-two/
@@ -279,7 +308,7 @@ class Main(QtGui.QMainWindow):
                                     print d
                                     aFound = os.path.join(dirname, d)
 
-                if rFound and gFound and bFound and aFound:
+                if rFound and gFound and bFound:
                     osVersion = self.checkWindowsVersion()
                     print self.checkPhotoshopVersion()
                     psApp = self.launchPhotoshop(osVersion)
@@ -312,13 +341,19 @@ class Main(QtGui.QMainWindow):
                     blankDoc.activeChannels = [blankDoc.channels['Blue']]
                     blankDoc.Paste()
 
+                if aFound:
                     a = psApp.Open(aFound)
                     a.selection.selectAll()
                     a.activeLayer.Copy()
 
                     psApp.activeDocument = blankDoc
                     blankDoc.channels.add()
+                    blankDoc.Name = 'Alpha 1'
+                    blankDoc.Kind = 2  # = PsChannelType.psMaskedAreaAlphaChannel
                     blankDoc.Paste()
+
+                # self.saveTGA(osVersion, psApp, newFileName)
+
                 else:
                     self.popupOkWindow('POOP')
 
