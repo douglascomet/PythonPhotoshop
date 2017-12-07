@@ -4,8 +4,8 @@
 #description     :Script used to pack textures using Photoshop
 #author          :Doug Halley
 #date            :20171204
-#version         :1.0
-#usage           :Standalone Python Application Executed by TextureResizer.exe
+#version         :3.0
+#usage           :Standalone Python Application Executed by TexturePacker.exe
 #notes           :
 #python_version  :2.7.14
 #pyqt_version    :4.11.4
@@ -21,55 +21,57 @@ from PIL import Image
 from PyQt4 import QtGui
 from PyQt4 import QtCore
 
-
 class Main(QtGui.QMainWindow):
-    """
+    '''
     The class that contains, defines, and creates the UI
-    """
+    '''
 
     def __init__(self, parent=None):
-        """
+        '''
         Class init
-        """
+        '''
         super(Main, self).__init__(parent)
         self.initUI()
 
     def initUI(self):
-        """
+        '''
         Creates UI
-        """
+        '''
 
         #==============================================================================
         # Global Variables
         #==============================================================================
 
         # window title
-        self.setWindowTitle("TexturePacker")
+        self.setWindowTitle('TexturePacker')
 
         #==============================================================================
         # PYQT Widget Defintions
         #==============================================================================
 
         # main widget
-        self.centralWidget = QtGui.QWidget()
-        self.centralWidget.setLayout(QtGui.QVBoxLayout())
+        self.central_widget = QtGui.QWidget()
+        self.central_widget.setLayout(QtGui.QVBoxLayout())
 
-        self.addDirectory = QtGui.QPushButton("Choose Directory")
-
+        # Search Directory widget
         self.inputDir_widget = QtGui.QWidget()
         self.inputDir_widget.setLayout(QtGui.QVBoxLayout())
 
-        self.dirName_lbl = QtGui.QLabel("Selected Directory:")
+        self.addDirectory = QtGui.QPushButton('Choose Directory')
+
+        self.dirName_lbl = QtGui.QLabel('Selected Directory:')
         self.dirName_lbl.setAlignment(QtCore.Qt.AlignCenter)
 
-        self.dir_lbl = QtGui.QLabel("")
+        self.dir_lbl = QtGui.QLabel('')
         self.dir_lbl.setAlignment(QtCore.Qt.AlignCenter)
 
+        # Input Channel widget
         self.inputChannel_widget = QtGui.QWidget()
         self.inputChannel_widget.setLayout(QtGui.QVBoxLayout())
 
-        channelInputs_lbl = QtGui.QLabel("Channel Inputs")
-
+        channelInputs_lbl = QtGui.QLabel('Channel Inputs')
+        
+        # RGBA channel widgets have the same declarations
         self.rChannel_widget = QtGui.QWidget()
         self.rChannel_widget.setLayout(QtGui.QHBoxLayout())
 
@@ -82,24 +84,64 @@ class Main(QtGui.QMainWindow):
         self.aChannel_widget = QtGui.QWidget()
         self.aChannel_widget.setLayout(QtGui.QHBoxLayout())
 
-        self.rChannel_lbl = QtGui.QLabel("R Channel")
-        self.gChannel_lbl = QtGui.QLabel("G Channel")
-        self.bChannel_lbl = QtGui.QLabel("B Channel")
-        self.aChannel_checkBox = QtGui.QCheckBox("A Channel")
+        self.rChannel_lbl = QtGui.QLabel('R Channel')
+        self.gChannel_lbl = QtGui.QLabel('G Channel')
+        self.bChannel_lbl = QtGui.QLabel('B Channel')
+
+        # QCheckbox is initialized at false
+        self.aChannel_checkBox = QtGui.QCheckBox('A Channel')
         self.aChannel_checkBox.setChecked(False)
 
-        self.rChannel_le = QtGui.QLineEdit("")
-        self.gChannel_le = QtGui.QLineEdit("")
-        self.bChannel_le = QtGui.QLineEdit("")
-        self.aChannel_le = QtGui.QLineEdit("")
+        self.rChannel_le = QtGui.QLineEdit('')
+        self.gChannel_le = QtGui.QLineEdit('')
+        self.bChannel_le = QtGui.QLineEdit('')
+
+        # QLineEdit is initialized at false
+        self.aChannel_le = QtGui.QLineEdit('')
         self.aChannel_le.setEnabled(False)
 
-        channelSearchText = 'Enter Prefix or Suffix'
+        # variable to be used for placeholder text in line edits
+        channelSearchText = 'Enter Suffix Here...'
 
         self.rChannel_le.setPlaceholderText(channelSearchText)
         self.gChannel_le.setPlaceholderText(channelSearchText)
         self.bChannel_le.setPlaceholderText(channelSearchText)
         self.aChannel_le.setPlaceholderText(channelSearchText)
+
+        # creates combobox for year
+        self.textureSize_comboBox = QtGui.QComboBox()
+
+        for x in [4096, 2048, 1024, 512, 256, 128, 64]:
+            self.textureSize_comboBox.addItem(QtCore.QString(str(x)))
+
+        # packed texture widget, uses similar declaration as RGBA widget declarations
+        self.packedTexture_widget = QtGui.QWidget()
+        self.packedTexture_widget.setLayout(QtGui.QHBoxLayout())
+
+        self.packedTexture_lbl = QtGui.QLabel('Packed Texture')
+        self.packedTexture_le = QtGui.QLineEdit('')
+        self.packedTexture_le.setPlaceholderText(channelSearchText)
+
+        # output format widget declaration to contain information string stating the output format
+        self.outputFormat_widget = QtGui.QWidget()
+        self.outputFormat_widget.setLayout(QtGui.QHBoxLayout())
+
+        self.outputFormatDescription_lbl = QtGui.QLabel('Output Format')
+        self.outputFormat_lbl = QtGui.QLabel('24bit .tga')
+
+        self.preProcessTextures_btn = QtGui.QPushButton('Pre-Process Textures')
+        self.processTextures_btn = QtGui.QPushButton('Pack Textures')
+
+        #==============================================================================
+        # PYQT Widget Assignments
+        #==============================================================================
+
+        self.inputDir_widget.layout().addWidget(self.addDirectory)
+        self.inputDir_widget.layout().layout().addWidget(self.dirName_lbl)
+        self.inputDir_widget.layout().layout().addWidget(self.dir_lbl)
+
+        self.packedTexture_widget.layout().addWidget(self.packedTexture_lbl)
+        self.packedTexture_widget.layout().addWidget(self.packedTexture_le)
 
         self.rChannel_widget.layout().layout().addWidget(self.rChannel_lbl)
         self.rChannel_widget.layout().layout().addWidget(self.rChannel_le)
@@ -113,43 +155,23 @@ class Main(QtGui.QMainWindow):
         self.aChannel_widget.layout().layout().addWidget(self.aChannel_checkBox)
         self.aChannel_widget.layout().layout().addWidget(self.aChannel_le)
 
-        # creates combobox for year
-        self.textureSize_comboBox = QtGui.QComboBox()
-
-        for x in [4096, 2048, 1024, 512, 256, 128, 64]:
-            self.textureSize_comboBox.addItem(QtCore.QString(str(x)))
-
-        self.packedTexture_widget = QtGui.QWidget()
-        self.packedTexture_widget.setLayout(QtGui.QHBoxLayout())
-
-        self.packedTexture_lbl = QtGui.QLabel("Packed Texture")
-        self.packedTexture_le = QtGui.QLineEdit("")
-        self.packedTexture_le.setPlaceholderText('Enter Suffix Here')
-
-        self.packedTexture_widget.layout().addWidget(self.packedTexture_lbl)
-        self.packedTexture_widget.layout().addWidget(self.packedTexture_le)
-
-        self.preProcessTextures_btn = QtGui.QPushButton("Pre-Process Textures")
-        self.processTextures_btn = QtGui.QPushButton("Process Textures")
-
-        self.inputDir_widget.layout().layout().addWidget(self.dirName_lbl)
-        self.inputDir_widget.layout().layout().addWidget(self.dir_lbl)
-
         self.inputChannel_widget.layout().addWidget(self.rChannel_widget)
         self.inputChannel_widget.layout().addWidget(self.gChannel_widget)
         self.inputChannel_widget.layout().addWidget(self.bChannel_widget)
         self.inputChannel_widget.layout().addWidget(self.aChannel_widget)
-        # self.inputChannel_widget.layout().layout().addWidget(self.textureSize_comboBox)
+
+        self.outputFormat_widget.layout().addWidget(self.outputFormatDescription_lbl)
+        self.outputFormat_widget.layout().addWidget(self.outputFormat_lbl)
 
         # adds project widget and tools widget to central widget
-        self.centralWidget.layout().addWidget(self.addDirectory)
-        self.centralWidget.layout().addWidget(self.inputDir_widget)
-        self.centralWidget.layout().addWidget(self.inputChannel_widget)
-        self.centralWidget.layout().addWidget(self.packedTexture_widget)
-        self.centralWidget.layout().addWidget(self.processTextures_btn)
+        self.central_widget.layout().addWidget(self.inputDir_widget)
+        self.central_widget.layout().addWidget(self.inputChannel_widget)
+        self.central_widget.layout().addWidget(self.packedTexture_widget)
+        self.central_widget.layout().addWidget(self.outputFormat_widget)
+        self.central_widget.layout().addWidget(self.processTextures_btn)
 
         # sets central widget for PyQt window
-        self.setCentralWidget(self.centralWidget)
+        self.setCentralWidget(self.central_widget)
 
         #==============================================================================
         # PYQT Execution Connections
@@ -160,12 +182,12 @@ class Main(QtGui.QMainWindow):
         self.preProcessTextures_btn.clicked.connect(
             lambda: self.preProcessTextures(str(self.dir_lbl.text())))
         self.processTextures_btn.clicked.connect(
-            lambda: self.textureResize(str(self.dir_lbl.text())))
+            lambda: self.packTextures(str(self.dir_lbl.text())))
         self.aChannel_checkBox.toggled.connect(
             lambda: self.toggleAlphaInput(self.aChannel_checkBox))
 
-    # creates QFileDialog to find designated folder
     def getDirectory(self):
+        '''creates QFileDialog to find designated folder'''
         dlg = QtGui.QFileDialog.getExistingDirectory(
             None, 'Select a folder:', 'C:\\Users\\desktop', QtGui.QFileDialog.ShowDirsOnly)
 
@@ -173,22 +195,22 @@ class Main(QtGui.QMainWindow):
         print self.dir_lbl.text()
 
     def toggleAlphaInput(self, checkBox):
-
+        '''toggles alpha channel QLineEdit usablity'''
         if checkBox.isChecked():
             self.aChannel_le.setEnabled(True)
+            self.outputFormat_lbl.setText('32bit .tga')
         else:
             self.aChannel_le.setEnabled(False)
+            self.outputFormat_lbl.setText('24bit .tga')
 
-    # Author: A.Polino - https://code.activestate.com/recipes/577514-chek-if-a-number-is-a-power-of-two/
     def is_power2(self, num):
+        '''# Author: A.Polino - https://code.activestate.com/recipes/577514-chek-if-a-number-is-a-power-of-two/'''
 
         # states if a number is a power of two
         return num != 0 and ((num & (num - 1)) == 0)
 
     def preProcessTextures(self, path):
-        #import collections
-        #path = "C:\\Users\\dhalley\\Desktop\\GarageScene"
-        #list_of_files = collections.OrderedDict()
+        '''Analyzes textures in folder to determine if their extension is correct'''
         count = 0
 
         if self.osPath(path):
@@ -212,10 +234,10 @@ class Main(QtGui.QMainWindow):
                         count += 1
             if count == 0:
                 self.popupOkWindow(
-                    "There were not any files that needed their extensions formatted")
+                    'There were not any files that needed their extensions formatted')
             else:
                 self.popupOkWindow(
-                    str(count) + "Files had their extenstions changed to .tga")
+                    str(count) + 'Files had their extenstions changed to .tga')
             # for x, y in list_of_files.iteritems():
             #     print 'File Name: ', x
             #     print 'File Path: ', y
@@ -223,159 +245,179 @@ class Main(QtGui.QMainWindow):
         else:
             self.popupOkWindow('Invalid Path')
 
-    def textureResize(self, path):
+    def packTextures(self, psPath):
 
-        psFileLocation = path
-
-        ext = (".tga", ".png")
+        ext = ('.tga', '.png', 'jpg')
 
         # counterer for number of files
         countTileable = 0
 
-        rFound = ''
-        gFound = ''
-        bFound = ''
-        aFound = ''
+        # variables used to store paths of textures that match desired suffixes
+        # variables are initilized to empty strings
+        rTexture = ''
+        gTexture = ''
+        bTexture = ''
+        aTexture = ''
 
-        # walk through directory, sub directories, and files
-        for (dirname, dirs, files) in os.walk(psFileLocation):
+        # check to prevent execution with entred output suffix
+        if self.packedTexture_le:
+            
+            # precautionary check to make sure that there is an entry in the RGB channels
+            if self.rChannel_le.text() and self.gChannel_le.text() and self.bChannel_le.text():
 
-            print dirname
-            # if not dirs:
-            #     print 'asdfasdfasdf' + str(dirs)
-            # print files
-            if dirs:
-                # print 'dirs'
-                for d in dirs:
-                    print d
-                    for x in os.listdir(os.path.join(dirname, d)):
-                        if os.path.isfile( os.path.join( os.path.join( dirname, d, x ) ) ):
-                            # check if file extension exists in extension list
-                            if x.lower().endswith('.tga'):
+                # walk through directory, sub directories, and files
+                for (dirname, dirs, files) in os.walk(psPath):
+
+                    print dirname
+
+                    if dirs:
+                        # print 'dirs'
+                        for d in dirs:
+                            print d
+
+                            # iterate over entries in a directory
+                            for x in os.listdir(os.path.join(dirname, d)):
                                 
-                                #store current path
-                                currentPath = os.path.join(
-                                    os.path.join(dirname, d, x))
-
-                                if self.rChannel_le.text():
-                                    if str(self.rChannel_le.text()) in x:
-                                        print x
-                                        rFound = currentPath
-
-                                if self.bChannel_le.text():
-                                    if str(self.bChannel_le.text()) in x:
-                                        print x
-                                        bFound = currentPath
-
-                                if self.gChannel_le.text():
-                                    if str(self.gChannel_le.text()) in x:
-                                        print x
-                                        gFound = currentPath
-
-                                if self.aChannel_le.text():
-                                    if str(self.aChannel_le.text()) in x:
-                                        print x
-                                        aFound = currentPath
-
-                                # check if a value for R, G, and B is found
-                                if rFound and gFound and bFound:
+                                # check if entry in directory is a file
+                                if os.path.isfile(os.path.join(os.path.join(dirname, d, x))):
                                     
-                                    # get used version of Windows
-                                    osVersion = self.checkWindowsVersion()
-
-                                    # open Photoshop
-                                    psApp = self.launchPhotoshop(osVersion)
-
-                                    r = psApp.Open(rFound)
-                                    docWidth = r.width
-                                    docHeight = r.height
-                                    r.selection.selectAll()
-                                    r.activeLayer.Copy()
-
-                                    blankDoc = psApp.Documents.Add(
-                                        docWidth, docHeight, 72, "new_document", 2, 1, 1)
-
-                                    # blankDoc.channels['Red'] - equivalent to calling channel by name
-                                    # activeChannels must receive an array
-                                    blankDoc.activeChannels = [blankDoc.channels['Red']]
-                                    blankDoc.Paste()
-
-                                    g = psApp.Open(gFound)
-                                    g.selection.selectAll()
-                                    g.activeLayer.Copy()
-
-                                    psApp.activeDocument = blankDoc
-                                    blankDoc.activeChannels = [blankDoc.channels['Green']]
-                                    blankDoc.Paste()
-
-                                    b = psApp.Open(bFound)
-                                    b.selection.selectAll()
-                                    b.activeLayer.Copy()
-
-                                    psApp.activeDocument = blankDoc
-                                    blankDoc.activeChannels = [blankDoc.channels['Blue']]
-                                    blankDoc.Paste()
-
-                                    # close original version without saving
-                                    r.Close(2)
-                                    g.Close(2)
-                                    b.Close(2)
-
-                                    if aFound:
-                                        a = psApp.Open(aFound)
-                                        a.selection.selectAll()
-                                        a.activeLayer.Copy()
-
-                                        psApp.activeDocument = blankDoc
-                                        blankDoc.channels.add()
-                                        # blankDoc.Name = 'Alpha 1'
-                                        # blankDoc.Kind = 2  # = PsChannelType.psMaskedAreaAlphaChannel
-                                        blankDoc.Paste()
-
-                                        a.Close(2)
-
-                                    if self.packedTexture_le:
-
-                                        splitPath, splitPathFileName = os.path.split(currentPath)
-
-                                        fileName, fileExt = os.path.splitext(splitPathFileName)
+                                    # check if file extension exists in extension list
+                                    if x.lower().endswith(ext):
                                         
-                                        # gets first element of split from '_' based on naming convention at BBA
-                                        splitFileName = fileName.split('_')
+                                        # store current path
+                                        currentPath = os.path.join(
+                                            os.path.join(dirname, d, x))
 
-                                        if len(splitFileName) > 1:
-                                            splitFileName.pop()
-                                            splitFileName = '_'.join(splitFileName)
-                                        else:
-                                            splitFileName = splitFileName[0]
+                                        if str(self.rChannel_le.text()) in x:
+                                            print x
+                                            rTexture = currentPath
 
-                                        newFileName = str(splitFileName) + str(self.packedTexture_le.text()) + fileExt
+                                        if str(self.bChannel_le.text()) in x:
+                                            print x
+                                            bTexture = currentPath
 
-                                        NewFileNamePath = os.path.join(splitPath, newFileName)
+                                        if str(self.gChannel_le.text()) in x:
+                                            print x
+                                            gTexture = currentPath
 
-                                        # if there is an alpha input be sure to export TGA with alpha option on
-                                        if aFound:
-                                            self.saveTGA(osVersion, psApp, NewFileNamePath, True)
-                                        else:
-                                            self.saveTGA(osVersion, psApp, NewFileNamePath)
+                                        # similarly to RGB checks, will only check if A QLineEdit is enabled
+                                        if self.aChannel_le.isEnabled() and self.aChannel_le.text():
+                                            if str(self.aChannel_le.text()) in x:
+                                                print x
+                                                aTexture = currentPath
 
-                                        blankDoc.Close(2)
+                                        # check if a value for R, G, and B is found to continue
+                                        if rTexture and gTexture and bTexture:
+                                            
+                                            # get version of Windows
+                                            osVersion = self.checkWindowsVersion()
 
-                                        # reset variables after packed texture is exported
-                                        rFound = ''
-                                        gFound = ''
-                                        bFound = ''
-                                        aFound = ''
-                                    else:
-                                        self.popupOkWindow('No Suffix for Packed Texture')
-                        
-                    print '^ Skipped'
-                    rFound = ''
-                    gFound = ''
-                    bFound = ''
-                    aFound = ''
+                                            # open Photoshop
+                                            psApp = self.launchPhotoshop(osVersion)
+
+                                            # open texture matching designated suffix to be used for R Channel
+                                            r = psApp.Open(rTexture)
+
+                                            # get width and height of texture
+                                            docWidth = r.width
+                                            docHeight = r.height
+
+                                            # selec and  copy contents of the layer in focus
+                                            r.selection.selectAll()
+                                            r.activeLayer.Copy()
+
+                                            # use height and width variables to create new texture with same dimentions
+                                            blankDoc = psApp.Documents.Add(
+                                                docWidth, docHeight, 72, 'new_document', 2, 1, 1)
+
+                                            # blankDoc.channels['Red'] - equivalent to calling channel by name
+                                            # activeChannels must receive an array
+                                            blankDoc.activeChannels = [blankDoc.channels['Red']]
+                                            blankDoc.Paste()
+
+                                            # follows same flow as what was done for R Channel
+                                            g = psApp.Open(gTexture)
+                                            g.selection.selectAll()
+                                            g.activeLayer.Copy()
+
+                                            psApp.activeDocument = blankDoc
+                                            blankDoc.activeChannels = [blankDoc.channels['Green']]
+                                            blankDoc.Paste()
+
+                                            # follows same flow as what was done for R and G Channels
+                                            b = psApp.Open(bTexture)
+                                            b.selection.selectAll()
+                                            b.activeLayer.Copy()
+
+                                            psApp.activeDocument = blankDoc
+                                            blankDoc.activeChannels = [blankDoc.channels['Blue']]
+                                            blankDoc.Paste()
+
+                                            # close original textures without saving
+                                            r.Close(2)
+                                            g.Close(2)
+                                            b.Close(2)
+
+                                            # based on earlier A Channel checks, should only proceed if A Channel was desired
+                                            if aTexture:
+                                                
+                                                # follows same flow as what was done for R, G and B Channels
+                                                a = psApp.Open(aTexture)
+                                                a.selection.selectAll()
+                                                a.activeLayer.Copy()
+
+                                                psApp.activeDocument = blankDoc
+                                                blankDoc.channels.add()
+                                                # blankDoc.Name = 'Alpha 1'
+                                                # blankDoc.Kind = 2  # = PsChannelType.psMaskedAreaAlphaChannel
+                                                blankDoc.Paste()
+
+                                                a.Close(2)                                            
+
+                                            splitPath, splitPathFileName = os.path.split(currentPath)
+
+                                            fileName, fileExt = os.path.splitext(splitPathFileName)
+                                            
+                                            # gets first element of split from '_' based on naming convention at BBA
+                                            splitFileName = fileName.split('_')
+
+                                            if len(splitFileName) > 1:
+                                                splitFileName.pop()
+                                                splitFileName = '_'.join(splitFileName)
+                                            else:
+                                                splitFileName = splitFileName[0]
+
+                                            newFileName = str(splitFileName) + str(self.packedTexture_le.text()) + fileExt
+
+                                            NewFileNamePath = os.path.join(splitPath, newFileName)
+
+                                            # if there is an alpha input be sure to export TGA with alpha option on
+                                            if aTexture:
+                                                self.saveTGA(osVersion, psApp, NewFileNamePath, True)
+                                            else:
+                                                self.saveTGA(osVersion, psApp, NewFileNamePath)
+
+                                            blankDoc.Close(2)
+
+                                            # reset variables after packed texture is exported
+                                            rTexture = ''
+                                            gTexture = ''
+                                            bTexture = ''
+                                            aTexture = ''
+
+                            # string variables are reset after traversing all files in a directory
+                            rTexture = ''
+                            gTexture = ''
+                            bTexture = ''
+                            aTexture = ''
+            else:
+                self.popupOkWindow('No Suffix Entred for all RGB Channels')
+        else:
+            self.popupOkWindow('No Suffix for Packed Texture')
+                    
                     
     def checkWindowsVersion(self):
+        '''Uses the platform package to determine the version of Windows'''
         import platform
         currentPlatform = platform.platform()
 
@@ -388,14 +430,15 @@ class Main(QtGui.QMainWindow):
             self.popupOkWindow('Untested OS. Tool only works on Windows')
 
     def checkPhotoshopVersion(self):
+        '''Used to determine if Photoshop is installed and which version is being used'''
 
         #default Photoshop install path
         if self.osPath('C:\\Program Files\\Adobe\\'):
 
             # get list of folders in default Photoshop install path
-            listdir = self.getPath('C:\\Program Files\\Adobe\\')
+            listdir = self.getPathDirs('C:\\Program Files\\Adobe\\')
 
-            # determine to see if a version of Photoshop is installed
+            # Searches Adobe directory to determine to see if a version of Photoshop is installed
             foundItems = [x for x in listdir if 'Photoshop' in x]
 
             if foundItems:
@@ -458,18 +501,21 @@ class Main(QtGui.QMainWindow):
 
     def launchPhotoshop(self, osVer):
 
-        # if osVer == '10':
-        psApp = comtypes.client.CreateObject(
-            'Photoshop.Application', dynamic=True)
-        psApp.Visible = True
+        if osVer == '10':
+            psApp = comtypes.client.CreateObject(
+                'Photoshop.Application', dynamic=True)
+            psApp.Visible = True
 
-        #Set the default unit to pixels!
-        psApp.Preferences.RulerUnits = 1
+            # Set the default unit to pixels!
+            psApp.Preferences.RulerUnits = 1
 
-        return psApp
+            return psApp
+        else:
+            self.popupOkWindow('Error with determining OS Version to launch Photoshop')
 
     def saveTGA(self, osVer, doc, tgaFile, saveAlpha=False):
 
+        # check if currently on Win10
         if osVer == '10':
             tgaOptions = comtypes.client.CreateObject(
                 'Photoshop.TargaSaveOptions', dynamic=True)
@@ -484,7 +530,7 @@ class Main(QtGui.QMainWindow):
             doc.ActiveDocument.SaveAs(tgaFile, tgaOptions, True)
 
     def popupDetailedOkWindow(self, message):
-        """ Generic popup window with an OK button and can display message based on use """
+        ''' Generic popup window with an OK button and can display message based on use '''
 
         popupWindow = QtGui.QMessageBox()
 
@@ -495,7 +541,7 @@ class Main(QtGui.QMainWindow):
         popupWindow.exec_()
 
     def popupOkWindow(self, message):
-        """ Generic popup window with an OK button and can display message based on use """
+        ''' Generic popup window with an OK button and can display message based on use '''
 
         popupWindow = QtGui.QMessageBox()
         popupWindow.setText(message)
@@ -503,13 +549,14 @@ class Main(QtGui.QMainWindow):
 
         popupWindow.exec_()
 
-    #get list of directories if path exists
-    def getPath(self, filePath):
+    def getPathDirs(self, filePath):
+        '''gets list of directories if path exists'''
         if self.osPath(filePath):
             return os.listdir(filePath)
 
-    #determine if path exists
+    
     def osPath(self, filePath):
+        '''check if path exists'''
         #print filePath
         #print type(filePath)
         if os.path.isdir(filePath):
