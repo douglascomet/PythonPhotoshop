@@ -82,7 +82,7 @@ class Main(QtGui.QMainWindow):
         textureSize_widget = QtGui.QWidget()
         textureSize_widget.setLayout(QtGui.QHBoxLayout())
 
-        textureSize_lbl = QtGui.QLabel("Texture Size")
+        textureSize_lbl = QtGui.QLabel('Texture Size')
 
         # creates combobox for texture sizes
         self.textureSize_comboBox = QtGui.QComboBox()
@@ -91,7 +91,7 @@ class Main(QtGui.QMainWindow):
             self.textureSize_comboBox.addItem(QtCore.QString(str(x)))
 
         self.processTextures_btn = QtGui.QPushButton(
-                        "Process Textures")
+                        'Process Textures')
 
         # Texture Packer widget to contain all elements need to run this tool ------------
         texturePacker_widget = QtGui.QWidget()
@@ -165,9 +165,9 @@ class Main(QtGui.QMainWindow):
         textureTools_tab_widget = QtGui.QTabWidget()
         textureTools_tab_widget.setLayout(QtGui.QHBoxLayout())
 
-        textureTools_tab_widget.addTab(texturePacker_widget, "Texture Packer")
-        textureTools_tab_widget.addTab(texturePreProcess_widget, "Texture PreProcesser")
-        textureTools_tab_widget.addTab(textureResizer_widget, "Texture Resizer")        
+        textureTools_tab_widget.addTab(texturePacker_widget, 'Texture Packer')
+        textureTools_tab_widget.addTab(texturePreProcess_widget, 'Texture PreProcesser')
+        textureTools_tab_widget.addTab(textureResizer_widget, 'Texture Resizer')        
 
         # ================================================================================
         # PYQT Widget Assignments
@@ -311,11 +311,14 @@ class Main(QtGui.QMainWindow):
         # counterer for number of files
         countTileable = 0
 
-        # variable to check size of images by
-        # targetSize = 512
-
         # list used to collect images larger than targetSize
         largerThanTargetSize = []
+
+        alreadySizedTextures = []
+
+        notPowerOf2Texture = []
+
+        notSquareTexture = []
 
         # walk through directory, sub directories, and files
         for (dirname, dirs, files) in os.walk(psPath):
@@ -339,54 +342,98 @@ class Main(QtGui.QMainWindow):
                             # check if file extension exists in extension list
                             if x.lower().endswith(self.extensions):
                                 
-                                # LIST COMPRESSION NEEDED HERE TO CHECK IF FILE NAME
-                                # CONTAINS ELEMENT FROM TEXTURE SIZE LIST
+                                # s variable used to iterate over self.textureSizes tuple
+                                # x current element being processed in directory
+                                if any(str(s) in x for s in self.textureSizes):
+                                    alreadySizedTextures.append(x)
+                                else:
+                                    # define imagePath string
+                                    imagePath = os.path.join(dirname, d, x)
 
-                                # define imagePath string
-                                imagePath = os.path.join(dirname, d, x)
+                                    # use PIL to create Image object
+                                    with Image.open(imagePath) as im:
+                                        sizeOfImage = im.size
 
-                                # use PIL to create Image object
-                                with Image.open(imagePath) as im:
-                                    sizeOfImage = im.size
+                                    # sizeOfImage returns tuple (width, height)
+                                    # check that image is square by comparing width and height
+                                    if sizeOfImage[0] == sizeOfImage[1]:
+                                        
+                                        # if width/height are equal, use either value to check if power of 2
+                                        if self.is_power2(sizeOfImage[0]):
+                                            print x + ' - ' + '{0}'.format(sizeOfImage)
+                                            countTileable = countTileable + 1
 
-                                # sizeOfImage returns tuple (width, height)
-                                # check that image is square by comparing width and height
-                                if sizeOfImage[0] == sizeOfImage[1]:
-                                    
-                                    # if width/height are equal, use either value to check if power of 2
-                                    if self.is_power2(sizeOfImage[0]):
-                                        print x + ' - ' + '{0}'.format(sizeOfImage)
-                                        countTileable = countTileable + 1
+                                            if sizeOfImage[0] < targetSize:
+                                                # testPrint = testPrint + imagePath + '\n'
+                                                largerThanTargetSize.append(imagePath)
+                                        else:
+                                            notPowerOf2Texture.append(x)
+                                    else:
+                                        notSquareTexture.append(x)
 
-                                        # if sizeOfImage[0] > targetSize:
-                                        #     testPrint = testPrint + imagePath + '\n'
-                                        #     largerThanTargetSize.append(imagePath)
-                                
-        # osVersion = self.checkWindowsVersion()
-        # print self.checkPhotoshopVersion()
-        # psApp = self.launchPhotoshop(osVersion)
+        if largerThanTargetSize:
+            osVersion = self.checkWindowsVersion()
+            print self.checkPhotoshopVersion()
+            psApp = self.launchPhotoshop(osVersion)
 
-        # version = psApp.Version
-        # print version
+            version = psApp.Version
+            print version
 
-        # print version
-        # print psApp.path
+            print version
+            print psApp.path
 
-        # for x in largerThanTargetSize:
-        #     test = psApp.Open(x)
+            for x in largerThanTargetSize:
+                test = psApp.Open(x)
 
-        #     psApp.Application.ActiveDocument
+                psApp.Application.ActiveDocument
 
-        #     test.resizeImage(targetSize, targetSize)
-            
-        #     filename, file_extension = os.path.splitext(x)
+                test.resizeImage(int(targetSize), int(targetSize))
+                
+                filename, file_extension = os.path.splitext(x)
 
-        #     newFileName = filename + '_' + \
-        #         str(targetSize) + file_extension
-        #     self.saveTGA(osVersion, psApp, newFileName)
+                newFileName = filename + '_' + \
+                    str(targetSize) + file_extension
+                self.saveTGA(osVersion, psApp, newFileName)
 
-        #     # close original version without saving
-        #     test.Close(2)
+                # close original version without saving
+                test.Close(2)
+
+            psApp.Quit()
+
+            combinedLargerTexturesHeader = 'LargerTextures:' + '\n'
+            combinedLargerTextures = '\n'.join(str(x) for x in largerThanTargetSize)
+        else:
+            combinedLargerTexturesHeader = 'LargerTextures' + '\n'
+            combinedLargerTextures = 'No Textures larger than ' + self.textureSize_comboBox.currentText() + ' were found'
+
+        combinedAlreadyResizedTexturesHeader = '\n\n' + \
+            'Alrleady ReSized and Skipped:' + '\n'
+        alreadyResizedTextures = '\n'.join(
+            str(x) for x in alreadySizedTextures)
+
+        combinedNotPowerOf2TexturesHeader = '\n\n' + 'Not Power of 2 Textures' + '\n'
+        notPowerOf2Textures = '\n'.join(
+            str(x) for x in notPowerOf2Texture)
+
+        combinedNotSquareTextureHeader = '\n\n' + 'Not Square Textures' + '\n'
+        notSquareTextures = '\n'.join(
+            str(x) for x in notSquareTexture)
+
+        outputString = combinedLargerTexturesHeader + \
+            combinedLargerTextures + combinedAlreadyResizedTexturesHeader + \
+            alreadyResizedTextures + combinedNotPowerOf2TexturesHeader + \
+            notPowerOf2Textures + combinedNotSquareTextureHeader + \
+            notSquareTextures
+
+        self.popupOkWindow(outputString)
+
+        largerThanTargetSize = []
+
+        alreadySizedTextures = []
+
+        notPowerOf2Texture = []
+
+        notSquareTexture = []
 
     def packTextures(self, psPath):
 
@@ -448,6 +495,7 @@ class Main(QtGui.QMainWindow):
                                                 aTexture = currentPath
 
                                         # check if a value for R, G, and B is found to continue
+                                        # should run only once within each directory if a texture is found for RGB at least
                                         if rTexture and gTexture and bTexture:
                                             
                                             # get version of Windows
