@@ -23,13 +23,14 @@ from PIL import Image
 from PyQt4 import QtGui
 from PyQt4 import QtCore
 
-
+class Main(QtGui.QMainWindow): # pylint: disable = E1101
     '''
     The class that contains, defines, and creates the UI.
     '''
 
     def __init__(self, parent=None):
         """Initilizes the PyQt Interface.
+
         Keyword Arguments:
             parent {None} -- By having no parent, ui can be standalone
                                 (default: {None})
@@ -40,6 +41,7 @@ from PyQt4 import QtCore
 
     def create_ui(self):
         """Creates the PyQt Interface.
+
         All the PyQt logic needed is contained in this function,
         including the PyQt elements and connect functions.
         """
@@ -128,11 +130,11 @@ from PyQt4 import QtCore
 
         # RGBA channel widgets have the same declarations -----------------------------
         # child widgets of input_channel_widget ---------------------------------------
-        r_channel_widget = QtGui.QWidget()  # pylint: disable = E1101
+        r_channel_widget = QtGui.QWidget() # pylint: disable = E1101
         r_channel_widget.setLayout(
             QtGui.QHBoxLayout())  # pylint: disable = E1101
 
-        g_channel_widget = QtGui.QWidget()  # pylint: disable = E1101
+        g_channel_widget = QtGui.QWidget() # pylint: disable = E1101
         g_channel_widget.setLayout(
             QtGui.QHBoxLayout())  # pylint: disable = E1101
 
@@ -199,12 +201,10 @@ from PyQt4 import QtCore
         # child widgets of central_widget ----------------------------------------------
         self.texture_tools_tab_widget = QtGui.QTabWidget()  # pylint: disable = E1101
         self.texture_tools_tab_widget.setLayout(
-            QtGui.QHBoxLayout())  # pylint: disable = E1101
+            QtGui.QHBoxLayout()) # pylint: disable = E1101
 
-        self.texture_tools_tab_widget.addTab(
-            texture_packer_widget, 'Pack Textures')
-        self.texture_tools_tab_widget.addTab(
-            texture_resizer_widget, 'Resize Textures')
+        self.texture_tools_tab_widget.addTab(texture_packer_widget, 'Pack Textures')
+        self.texture_tools_tab_widget.addTab(texture_resizer_widget, 'Resize Textures')
         # self.texture_tools_tab_widget.addTab( \
         # texture_preprocess_widget, 'Texture PreProcesser')
         self.texture_tools_tab_widget.setEnabled(False)
@@ -288,6 +288,7 @@ from PyQt4 import QtCore
 
     def get_directory(self):
         """Create popup file browser and stores path.
+
         Creates QFileDialog to find and store designated folder
         """
 
@@ -306,8 +307,10 @@ from PyQt4 import QtCore
 
     def toggle_alpha_input(self, checkbox):
         """Toggles alpha channel QLineEdit usablity.
+
         Checks if input checkbox is checked and determines if
         a_channel_le is enabled or disabled
+
         Arguments:
             checkbox {QCheckBox} -- If checkbox is checked
             set parameters of other Q-Objects
@@ -320,11 +323,63 @@ from PyQt4 import QtCore
             self.a_channel_le.setEnabled(False)
             self.output_format_lbl.setText('24bit .tga')
 
+    def scandir_to_dict(self, path):
+        """Use scandir walk function to parse directories.
+
+        The scandir package was developed by Ben Hoyt and incorporated into Python 3.5.
+        He wrote a blogpost about it here:
+        http://benhoyt.com/writings/scandir/
+
+        When developing with os.walk I noticed that there are extra iterations happening.
+        They are not apparent because the conditional statements I set up only show what
+        I want to see. Inherently, to my understanding, os.walk will iterate across each
+        directory and each file in each directory.
+
+        By contrast scandir makes a tuple for each directory.
+        Tuple Indexes:
+            [0] {string}- directory path
+            [1] {list} - list of sub directories
+            [2] {list} - list of files in the directory path
+
+        I referred to these links to understand how to use scandir:
+        https://www.blog.pythonlibrary.org/2016/01/26/python-101-how-to-traverse-a-directory/
+        https://www.python.org/dev/peps/pep-0471/#os-scandir
+
+        This format makes the results of scandir.walk easy to work with.
+        I planned to send the results of scandir.walk into other functions
+        and rather than remembering which index to work with, I decided to
+        make a dictionary with easily indentifiable keys to make reading
+        back my code easier.
+
+        Arguments:
+            path {string} -- root directory folder
+
+        Returns:
+            dictionary -- dicionary containing the results of scandir.walk
+        """
+
+        # list of dictionaries
+        scandir_entries = []
+
+        # walk through directory, sub directories, and files
+        for entry in scandir.walk(path):
+            temp = {"Directory": '', 'Sub_Dirs': [], 'Files': []}
+            temp['Directory'] = entry[0]
+            temp['Sub_Dirs'] = entry[1]
+            temp['Files'] = entry[2]
+
+            scandir_entries.append(temp)
+
+        return scandir_entries
+
     def parse_texture_to_resize(self, ps_path, target_size):
         """Analyzes input path to determine which actions to take.
+
         Parses input string and uses os.walk to get all subfolders
         and files.
+
         If there are no subfolders than function will just parse files.
+
         Arguments:
             ps_path {string} -- path to analyze
             target_size {int} -- designated size to resize textures to
@@ -332,28 +387,19 @@ from PyQt4 import QtCore
 
         # dictionary used to collect images larger than target_size
         texture_analysis_dict = {"Larger Textures": [], "Already Sized Textures": [], \
-                                "Not Power of 2": [], "Not Square": []}
+        "Not Power of 2": [], "Not Square": []}
 
-        # walk through directory, sub directories, and files
-        for (directory_path, directories, files) in os.walk(ps_path):  # pylint: disable = W0612
+        scandir_list = self.scandir_to_dict(ps_path)
 
+        for entry in scandir_list:
             #print directory_path
             #print directories
             #print files
-            if directories:
-                # iterate over list of subdirectories
-                for dir_name in directories:
-                    path = os.path.join(directory_path, dir_name)
+            # path = os.path.join(entry[0])
 
-                    # precautionary check to ensure is valid path
-                    if os.path.isdir(path):
-
-                        texture_analysis_dict = self.analyze_textures_to_resize(
-                            path, texture_analysis_dict, target_size)
-
-            else:
-                texture_analysis_dict = self.analyze_textures_to_resize(
-                    directory_path, texture_analysis_dict, target_size)
+            # print str(entry)
+            texture_analysis_dict = self.analyze_textures_to_resize(
+                str(entry['Directory']), entry['Files'], texture_analysis_dict, target_size)
 
         if texture_analysis_dict["Larger Textures"]:
 
@@ -376,71 +422,73 @@ from PyQt4 import QtCore
 
         texture_analysis_dict["Not Square"] = []
 
-    def analyze_textures_to_resize(self, directory_path, texture_dict, target_size):
+    def analyze_textures_to_resize(self, directory_path, dir_files, texture_dict, target_size):
         """Parse directories to find textures and resize them.
+
         This function does a preliminary scan of the directory given by the user.
         If texture files are found they are analyzed and their resolution is compared
         to the input resolution to determine the appopriate action to take.
+
         If textures are found to be larger than the input, photoshop is opened and the
         texture is resized and a duplicate is saved. The file names of the duplicate
         files are modified to reflect the texture size they have been scaled to.
+
         Arguments:
             directory_path {string} -- Input directory to analyze and parse through
+            dir_files {list} -- Input list of files to iterate through
             texture_dict {dictionary} -- Dictionary used to store different scenarios
                                             and return the results of the analysis
             target_size {int} -- Input texture sized that files will be sized to
+
         Returns:
             dictionary -- After found textures are analyzed, they are stored in the
                             dictionary variable to be used later
         """
 
-        # iterate over entries in found subdirectory
-        for current_dir in os.listdir(directory_path):
+        # iterate over scandir_entries in found subdirectory
+        for current_file in dir_files:
 
-            current_file_path = os.path.join(directory_path, current_dir)
+            current_file_path = os.path.join(directory_path, current_file)
 
-            # check if x during iteration is a file
-            if os.path.isfile(current_file_path):
+            # check if file extension exists in extension list
+            if current_file.lower().endswith(self.extensions):
+                # s variable used to iterate over self.texture_sizes tuple
+                # x current element being processed in directory
+                if any(str(s) in current_file for s in self.texture_sizes):
+                    texture_dict["Already Sized Textures"].append(
+                        current_file)
+                else:
+                    # use PIL package to create Image object
+                    with Image.open(current_file_path) as image:
+                        size_of_image = image.size
 
-                # check if file extension exists in extension list
-                if current_dir.lower().endswith(self.extensions):
+                    # size_of_image returns tuple (width, height)
+                    # check that image is square by comparing width and height
+                    if size_of_image[0] == size_of_image[1]:
 
-                    # s variable used to iterate over self.texture_sizes tuple
-                    # x current element being processed in directory
-                    if any(str(s) in current_dir for s in self.texture_sizes):
-                        texture_dict["Already Sized Textures"].append(current_dir)
+                        # if width/height are equal,
+                        # use either value to check if power of 2
+                        if self.is_power2(size_of_image[0]):
+                            # print current_file_path + ' - ' + '{0}'.format(size_of_image)
+                            # count_tileable = count_tileable + 1
 
-                    else:
-                        # use PIL package to create Image object
-                        with Image.open(current_file_path) as image:
-                            size_of_image = image.size
-
-                        # size_of_image returns tuple (width, height)
-                        # check that image is square by comparing width and height
-                        if size_of_image[0] == size_of_image[1]:
-
-                            # if width/height are equal,
-                            # use either value to check if power of 2
-                            if self.is_power2(size_of_image[0]):
-                                print current_dir + ' - ' + '{0}'.format(size_of_image)
-                                # count_tileable = count_tileable + 1
-
-                                if size_of_image[0] < target_size:
-                                    # testPrint = testPrint + imagePath + '\n'
-                                    texture_dict["Larger Textures"].append(
-                                        current_file_path)
-                            else:
-                                texture_dict["Not Power of 2"].append(
-                                    current_dir)
+                            if size_of_image[0] < target_size:
+                                # testPrint = testPrint + imagePath + '\n'
+                                texture_dict["Larger Textures"].append( \
+                                    current_file_path)
                         else:
-                            texture_dict["Not Square"].append(current_dir)
+                            texture_dict["Not Power of 2"].append(current_file)
+                    else:
+                        texture_dict["Not Square"].append(current_file)
 
         return texture_dict
 
     def texture_resize(self, list_to_resize, target_size):
         """Resize and export process textures.
+
         Logic to control Photoshop, resize textures, and save as a new texture
         and include the new size in the file name
+
         Arguments:
             list_to_resize {list} -- List of textures designated to be resized
             target_size {int} -- Input texture sized that files will be sized to
@@ -479,7 +527,7 @@ from PyQt4 import QtCore
                 str(target_size) + file_extension
 
             # call function to Save As the resized texture
-            self.save_tga(os_version, ps_app, new_file_name)
+            self.save_as(os_version, ps_app, current_ps_doc, new_file_name)
 
             # close original version without saving
             current_ps_doc.Close(2)
@@ -490,6 +538,7 @@ from PyQt4 import QtCore
     def parse_texture_dirs_to_pack(self, ps_path):
         """Based on user input, code will determine whether to iterate
             through folders or across files to find textures to pack.
+
         Arguments:
             ps_path {string} -- path to analyze
         """
@@ -500,38 +549,24 @@ from PyQt4 import QtCore
             # precautionary check to make sure that there is an entry in the RGB channels
             if self.r_channel_le.text() and self.g_channel_le.text() and self.b_channel_le.text():
 
-                # walk through directory, sub directories, and files
-                for (directory_path, directories, files) in os.walk(ps_path):  # pylint: disable = W0612
 
-                    # print directory_path
+                scandir_list = self.scandir_to_dict(ps_path)
 
-                    # true if function input directory has subfolders
-                    # else iterate over files
-                    if directories:
-                        # print 'directories'
+                for entry in scandir_list:
 
-                        # iterate over list of directories found by os.walk
-                        for current_dir in directories:
-                            # print d
-
-                            # join iterated directories with parent directory
-                            path = os.path.join(directory_path, current_dir)
-
-                            self.pack_textures(path)
-
-                    else:
-                        self.pack_textures(directory_path)
+                    self.pack_textures(entry)
             else:
                 self.popup_ok_window('No Suffix Entred for all RGB Channels')
         else:
             self.popup_ok_window('No Suffix for Packed Texture')
 
-    def pack_textures(self, directory_path):
+    def pack_textures(self, scandir_entry):
         """Logic used to control Photoshop and copy flattened textures
             into RGBA channels of a new texture.
+
         Arguments:
-            directory_path {string} -- input directory to search for textures
-                                        to be used for packing.
+            scandir_entry {dictionary} -- input scandir generated dictionary to
+                                        iterate over.
         """
 
         # variables used to store paths of textures that match desired suffixes
@@ -541,159 +576,144 @@ from PyQt4 import QtCore
         b_texture = ''
         a_texture = ''
 
-        listdir = os.listdir(directory_path)
-
-        found_rgb_textures = False
-
-        # get version of Windows
-        os_version = self.check_windows_version()
-
-        # open Photoshop
-        ps_app = self.launch_photoshop(os_version)
-
-        # iterate over entries in a directory
-        for current_dir in listdir:
+        # iterate over scandir_entries in a directory
+        for current_file in scandir_entry['Files']:
 
             # store current path
-            current_file_path = os.path.join(
-                os.path.join(directory_path, current_dir))
+            current_file_path = os.path.join( \
+                scandir_entry['Directory'], current_file)
 
-            # check if entry in directory is a file
-            if os.path.isfile(current_file_path):
+            # check if file extension exists in extension list
+            if current_file.lower().endswith(self.extensions):
 
-                # check if file extension exists in extension list
-                if current_dir.lower().endswith(self.extensions):
+                if str(self.r_channel_le.text()) in current_file:
+                    print current_file
+                    r_texture = current_file_path
 
-                    if str(self.r_channel_le.text()) in current_dir:
-                        print current_dir
-                        r_texture = current_file_path
+                if str(self.b_channel_le.text()) in current_file:
+                    print current_file
+                    b_texture = current_file_path
 
-                    if str(self.b_channel_le.text()) in current_dir:
-                        print current_dir
-                        b_texture = current_file_path
+                if str(self.g_channel_le.text()) in current_file:
+                    print current_file
+                    g_texture = current_file_path
 
-                    if str(self.g_channel_le.text()) in current_dir:
-                        print current_dir
-                        g_texture = current_file_path
+                # similarly to RGB checks, will only check if A QLineEdit is enabled
+                if self.a_channel_le.isEnabled() and self.a_channel_le.text():
+                    if str(self.a_channel_le.text()) in current_file:
+                        print current_file
+                        a_texture = current_file_path
 
-                    # similarly to RGB checks, will only check if A QLineEdit is enabled
-                    if self.a_channel_le.isEnabled() and self.a_channel_le.text():
-                        if str(self.a_channel_le.text()) in current_dir:
-                            print current_dir
-                            a_texture = current_file_path
+                # check if a value for R, G, and B is found to continue
+                # should run only once within each directory
+                # if a texture is found for RGB at least
+                if r_texture and g_texture and b_texture:
 
-                    # check if a value for R, G, and B is found to continue
-                    # should run only once within each directory
-                    # if a texture is found for RGB at least
-                    if r_texture and g_texture and b_texture:
+                    # get version of Windows
+                    os_version = self.check_windows_version()
 
-                        found_rgb_textures = True
+                    # open Photoshop
+                    ps_app = self.launch_photoshop(os_version)
 
-                        # open texture matching designated suffix to be used for R Channel
-                        r_doc = ps_app.Open(r_texture)
+                    # open texture matching designated suffix to be used for R Channel
+                    r_doc = ps_app.Open(r_texture)
 
-                        # get width and height of texture
-                        doc_width = r_doc.width
-                        doc_height = r_doc.height
+                    # get width and height of texture
+                    doc_width = r_doc.width
+                    doc_height = r_doc.height
 
-                        # selec and  copy contents of the layer in focus
-                        r_doc.selection.selectAll()
-                        r_doc.activeLayer.Copy()
+                    # selec and  copy contents of the layer in focus
+                    r_doc.selection.selectAll()
+                    r_doc.activeLayer.Copy()
 
-                        # use height and width variables to create new texture with same dimentions
-                        blank_doc = ps_app.Documents.Add(
-                            doc_width, doc_height, 72, 'new_document', 2, 1, 1)
+                    # use height and width variables to create new texture with same dimentions
+                    blank_doc = ps_app.Documents.Add(
+                        doc_width, doc_height, 72, 'new_document', 2, 1, 1)
 
-                        # blank_doc.channels['Red'] - equivalent to calling channel by name
-                        # activeChannels must receive an array
-                        blank_doc.activeChannels = [blank_doc.channels['Red']]
-                        blank_doc.Paste()
+                    # blank_doc.channels['Red'] - equivalent to calling channel by name
+                    # activeChannels must receive an array
+                    blank_doc.activeChannels = [blank_doc.channels['Red']]
+                    blank_doc.Paste()
 
-                        # follows same flow as what was done for R Channel
-                        g_doc = ps_app.Open(g_texture)
-                        g_doc.selection.selectAll()
-                        g_doc.activeLayer.Copy()
+                    # follows same flow as what was done for R Channel
+                    g_doc = ps_app.Open(g_texture)
+                    g_doc.selection.selectAll()
+                    g_doc.activeLayer.Copy()
+
+                    ps_app.activeDocument = blank_doc
+                    blank_doc.activeChannels = [blank_doc.channels['Green']]
+                    blank_doc.Paste()
+
+                    # follows same flow as what was done for R and G Channels
+                    b_doc = ps_app.Open(b_texture)
+                    b_doc.selection.selectAll()
+                    b_doc.activeLayer.Copy()
+
+                    ps_app.activeDocument = blank_doc
+                    blank_doc.activeChannels = [blank_doc.channels['Blue']]
+                    blank_doc.Paste()
+
+                    # close original textures without saving
+                    r_doc.Close(2)
+                    g_doc.Close(2)
+                    b_doc.Close(2)
+
+                    # based on earlier A Channel checks
+                    # should only proceed if A Channel was desired
+                    if a_texture:
+
+                        # follows same flow as what was done for R, G and B Channels
+                        a_doc = ps_app.Open(a_texture)
+                        a_doc.selection.selectAll()
+                        a_doc.activeLayer.Copy()
 
                         ps_app.activeDocument = blank_doc
-                        blank_doc.activeChannels = [blank_doc.channels['Green']]
+                        blank_doc.channels.add()
+                        # blank_doc.Name = 'Alpha 1'
+                        # blank_doc.Kind = 2  # = PsChannelType.psMaskedAreaAlphaChannel
                         blank_doc.Paste()
 
-                        # follows same flow as what was done for R and G Channels
-                        b_doc = ps_app.Open(b_texture)
-                        b_doc.selection.selectAll()
-                        b_doc.tiveLayer.Copy()
+                        a_doc.Close(2)
 
-                        ps_app.activeDocument = blank_doc
-                        blank_doc.activeChannels = [blank_doc.channels['Blue']]
-                        blank_doc.Paste()
+                    split_path, split_path_file_name = os.path.split(
+                        current_file_path)
 
-                        # close original textures without saving
-                        r_doc.Close(2)
-                        g_doc.Close(2)
-                        b_doc.Close(2)
+                    file_name, file_ext = os.path.splitext(split_path_file_name)
 
-                        # based on earlier A Channel checks
-                        # should only proceed if A Channel was desired
-                        if a_texture:
+                    # gets first element of split from '_' based on naming convention at BBA
+                    split_file_name = file_name.split('_')
 
-                            # follows same flow as what was done for R, G and B Channels
-                            a_doc = ps_app.Open(a_texture)
-                            a_doc.selection.selectAll()
-                            a_doc.activeLayer.Copy()
+                    if len(split_file_name) > 1:
+                        split_file_name.pop()
+                        split_file_name = '_'.join(split_file_name)
+                    else:
+                        split_file_name = split_file_name[0]
 
-                            ps_app.activeDocument = blank_doc
-                            blank_doc.channels.add()
-                            # blank_doc.Name = 'Alpha 1'
-                            # blank_doc.Kind = 2  # = PsChannelType.psMaskedAreaAlphaChannel
-                            blank_doc.Paste()
+                    new_file_name = str(split_file_name) + \
+                        str(self.packed_texture_le.text()) + file_ext
 
-                            a_doc.Close(2)
+                    new_file_name_path = os.path.join(split_path, new_file_name)
 
-                        split_path, split_path_file_name = os.path.split(
-                            current_file_path)
+                    # if there is an alpha input be sure to export TGA with alpha option on
+                    if a_texture:
+                        self.save_tga(os_version, ps_app, new_file_name_path, True)
+                    else:
+                        self.save_tga(os_version, ps_app, new_file_name_path)
 
-                        file_name, file_ext = os.path.splitext(
-                            split_path_file_name)
+                    blank_doc.Close(2)
 
-                        # gets first element of split from '_' based on naming convention at BBA
-                        split_file_name = file_name.split('_')
+                    # clear variables after packed texture is exported
+                    r_texture = ''
+                    g_texture = ''
+                    b_texture = ''
+                    a_texture = ''
 
-                        if len(split_file_name) > 1:
-                            split_file_name.pop()
-                            split_file_name = '_'.join(split_file_name)
-                        else:
-                            split_file_name = split_file_name[0]
-
-                        new_file_name = str(split_file_name) + \
-                            str(self.packed_texture_le.text()) + file_ext
-
-                        new_file_name_path = os.path.join(
-                            split_path, new_file_name)
-
-                        # if there is an alpha input be sure to export TGA with alpha option on
-                        if a_texture:
-                            self.save_tga(os_version, ps_app, new_file_name_path, True)
-                        else:
-                            self.save_tga(os_version, ps_app, new_file_name_path)
-
-                        blank_doc.Close(2)
-
-                        # clear variables after packed texture is exported
-                        r_texture = ''
-                        g_texture = ''
-                        b_texture = ''
-                        a_texture = ''
-
-        if found_rgb_textures:
-            # after using photoshop,
-            # prompt and ask user if they are done using photoshop
-            self.close_photoshop(ps_app)
-        else:
-            self.popup_ok_window('No textures found to pack')
-            self.close_photoshop(ps_app)
+        # after using photoshop, prompt and ask user if they are done using photoshop
+        self.close_photoshop(ps_app)
 
     def check_windows_version(self):
         """Uses the platform package to determine the version of Windows.
+
         Returns:
             string -- Returns Windows OS version
         """
@@ -710,6 +730,7 @@ from PyQt4 import QtCore
 
     def check_photoshop_version(self):
         """Determine version of Photoshop installed.
+
         Returns:
             string -- Returns Photoshop version
         """
@@ -786,12 +807,16 @@ from PyQt4 import QtCore
 
     def launch_photoshop(self, os_ver):
         """Function used to launch Photoshop.
+
         Creates a com object that is used to launch and control Photoshop.
         Currently the com object is set to dynamic, unsure what this entails
         but it has allowed the script to work with various Photoshop versions.
+
         Photoshop versions tested with 2018, 2017, CS6
+
         Arguments:
             os_ver {string} -- Windows OS version
+
         Returns:
             com_object -- Returns instance of Photoshop object.
         """
@@ -806,13 +831,14 @@ from PyQt4 import QtCore
 
             return ps_app
         else:
-            self.popup_ok_window(
-                'Error with determining OS Version to launch Photoshop')
+            self.popup_ok_window('Error with determining OS Version to launch Photoshop')
 
     def resize_results_popup(self, texture_dict, target_size):
         """Generates popup to show results of resize texture function.
+
         Collects contents of resize texture dictionary, combines into a string, and
         generates a popup witht his string.
+
         Arguments:
             texture_dict {dictionary} -- Dictionary used to store different scenarios
                                             and return the results of the analysis
@@ -830,7 +856,7 @@ from PyQt4 import QtCore
         else:
             larger_textures_header = 'Resized Textures' + '\n'
             larger_textures = 'No Textures found larger than ' + \
-                self.texture_size_combobox.currentText() + ' were found'
+            self.texture_size_combobox.currentText() + ' were found'
 
         already_resized_textures_header = '\n\n' + \
             'Already ReSized and Skipped:' + '\n'
@@ -853,17 +879,62 @@ from PyQt4 import QtCore
 
         self.popup_ok_window(output_string)
 
+    def save_as(self, os_ver, ps_app, ps_doc, file_name):
+        """Runs Save As Photoshop operation to save resized texture as a
+            duplicate file.
+
+        Similarly to com_object needed to launch and control Photoshop, a
+        com_object is needed. So a com_object is created to contain the appopriate
+        save options to save the file.
+
+        Arguments:
+            os_ver {string} -- Current version of Windows being used.
+            ps_app {com_object} -- Gets current Photoshop instance
+            ps_doc {com_object} -- The active photoshop document.
+            file_name {string} -- File name for the tga file to be generated.
+        """
+
+        # check if currently on Win10
+        if os_ver == '10':
+
+            # split the extension from the texture path
+            file_name_split, file_extension = os.path.splitext(file_name)
+
+            if file_extension == '.tga':
+
+                # get channel count of document
+                # if there are less than 3 channels then save without alpha
+                if ps_doc.channels.count > 3:
+                    self.save_tga(os_ver, ps_app, file_name, True)
+                else:
+                    self.save_tga(os_ver, ps_app, file_name)
+            else:
+                if file_extension == '.jpg':
+                    # creates com object for tga save operation
+                    save_options = comtypes.client.CreateObject(
+                        'Photoshop.JPEGSaveOptions', dynamic=True)
+                elif file_extension == '.png':
+                    # creates com object for tga save operation
+                    save_options = comtypes.client.CreateObject(
+                        'Photoshop.PNGSaveOptions', dynamic=True)
+
+                # Photoshop saves texture as tga
+                ps_app.ActiveDocument.SaveAs(file_name, save_options, True)
+
     @classmethod
     def save_tga(cls, os_ver, ps_app, tga_file, alpha_channel=False):
         """Runs Save As Photoshop operation to save resized texture as a
             duplicate file.
+
         Similarly to com_object needed to launch and control Photoshop, a
         com_object is needed. So a com_object is created to contain the
         attributes to create a tga file.
+
         Arguments:
             os_ver {string} -- Current version of Windows being used.
             ps_doc {com_object} -- The active photoshop document.
             tga_file {string} -- File name for the tga file to be generated.
+
         Keyword Arguments:
             alpha_channel {bool} -- Determines if alpha channel is included in
                                     save (default: {False})
@@ -891,10 +962,13 @@ from PyQt4 import QtCore
     def is_power2(cls, num):
         """Performs calculation to determine if input
         number is a power of 2.
+
         Author: A.Polino
         https://code.activestate.com/recipes/577514-chek-if-a-number-is-a-power-of-two/
+
         Arguments:
             num {int} -- Input value to check
+
         Returns:
             boolean -- One line calculation and returns True or False
         """
@@ -905,8 +979,10 @@ from PyQt4 import QtCore
     @classmethod
     def popup_detailed_ok_window(cls, message):
         """Generic popup window with an OK button and displays message.
+
         Generates QMessageBox with OK button.
         Used for a detailed notification.
+
         Arguments:
             message {string} -- string to be generated in detailed popup
         """
@@ -923,8 +999,10 @@ from PyQt4 import QtCore
     @classmethod
     def popup_ok_window(cls, message):
         """Generic popup window with an OK button and displays message
+
         Generates QMessageBox with OK button.
         Used as a simple notification.
+
         Arguments:
             message {string} -- string to be generated in popup
         """
@@ -939,8 +1017,10 @@ from PyQt4 import QtCore
     @classmethod
     def close_photoshop(cls, ps_app):
         """Popup to ask user if they would want to close Photoshop
+
         Generates QMessageBox with yes and no buttons.
         If yes button is clicked close Photoshop
+
         Arguments:
             ps_app {com_object} -- Gets current Photoshop instance
         """
@@ -962,4 +1042,4 @@ if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)  # pylint: disable = E1101
     my_widget = Main()
     my_widget.show()
-sys.exit(app.exec_())
+    sys.exit(app.exec_())
