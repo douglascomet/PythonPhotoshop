@@ -5,6 +5,7 @@
 # description     :Script used to automate Photoshop operations across several files
 # author          :Doug Halley
 # date            :2017-12-16
+# version         :11.0
 # usage           :Standalone Python Application Executed by Pyotoshop.exe
 # notes           :
 # python_version  :2.7.14
@@ -14,6 +15,7 @@
 
 import os
 import sys
+import scandir
 import platform
 import comtypes.client
 
@@ -62,30 +64,25 @@ class Main(QtGui.QMainWindow): # pylint: disable = E1101
 
         # main widget ------------------------------------------------------------------
         central_widget = QtGui.QWidget()  # pylint: disable = E1101
-        central_widget.setLayout(
-            QtGui.QVBoxLayout())  # pylint: disable = E1101
+        central_widget.setLayout(QtGui.QVBoxLayout())  # pylint: disable = E1101
 
         # Search Directory widget ------------------------------------------------------
         input_dir_widget = QtGui.QWidget()  # pylint: disable = E1101
-        input_dir_widget.setLayout(
-            QtGui.QVBoxLayout())  # pylint: disable = E1101
+        input_dir_widget.setLayout(QtGui.QVBoxLayout())  # pylint: disable = E1101
 
         self.add_directory = QtGui.QPushButton(  # pylint: disable = E1101
             'Choose Directory')
 
         dir_name_lbl = QtGui.QLabel(  # pylint: disable = E1101
             'Selected Directory:')
-        dir_name_lbl.setAlignment(
-            QtCore.Qt.AlignCenter)  # pylint: disable = E1101
+        dir_name_lbl.setAlignment(QtCore.Qt.AlignCenter)  # pylint: disable = E1101
 
         self.dir_lbl = QtGui.QLabel('')  # pylint: disable = E1101
-        self.dir_lbl.setAlignment(
-            QtCore.Qt.AlignCenter)  # pylint: disable = E1101
+        self.dir_lbl.setAlignment(QtCore.Qt.AlignCenter)  # pylint: disable = E1101
 
         # widget to fix extensions for targa files -------------------------------------
         texture_preprocess_widget = QtGui.QWidget()  # pylint: disable = E1101
-        texture_preprocess_widget.setLayout(
-            QtGui.QVBoxLayout())  # pylint: disable = E1101
+        texture_preprocess_widget.setLayout(QtGui.QVBoxLayout())  # pylint: disable = E1101
 
         self.preprocess_textures_btn = QtGui.QPushButton(  # pylint: disable = E1101
             'Pre-Process Textures')
@@ -372,16 +369,14 @@ class Main(QtGui.QMainWindow): # pylint: disable = E1101
 
         return scandir_entries
 
-    def parse_texture_to_resize(self, ps_path, target_size):
-        """Analyzes input path to determine which actions to take.
+    def parse_texture_to_resize(self, path, target_size):
+        """Parse through root directory and determine which actions to take.
 
-        Parses input string and uses os.walk to get all subfolders
-        and files.
-
-        If there are no subfolders than function will just parse files.
+        Parses input root and uses self.scandir_to_dict to get the directory,
+        all subfolders and files into a dictionary format.
 
         Arguments:
-            ps_path {string} -- path to analyze
+            path {string} -- path to analyze
             target_size {int} -- designated size to resize textures to
         """
 
@@ -389,22 +384,22 @@ class Main(QtGui.QMainWindow): # pylint: disable = E1101
         texture_analysis_dict = {"Larger Textures": [], "Already Sized Textures": [], \
         "Not Power of 2": [], "Not Square": []}
 
-        scandir_list = self.scandir_to_dict(ps_path)
+        # use self.scandir_to_dict to walk across the root directory
+        # and output the values to a dictionary
+        scandir_list = self.scandir_to_dict(path)
 
+        # iterate across list of dictionary that contains the
+        # root directory, subfolders, and files
         for entry in scandir_list:
-            #print directory_path
-            #print directories
-            #print files
-            # path = os.path.join(entry[0])
 
             # print str(entry)
             texture_analysis_dict = self.analyze_textures_to_resize(
                 str(entry['Directory']), entry['Files'], texture_analysis_dict, target_size)
 
+        # if this key's list has values, run function to resize these textures
         if texture_analysis_dict["Larger Textures"]:
 
-            self.texture_resize(
-                texture_analysis_dict["Larger Textures"], target_size)
+            self.texture_resize(texture_analysis_dict["Larger Textures"], target_size)
 
             # larger_textures = '\n'.join(
             #     str(x) for x in texture_analysis_dict["Larger Textures"])
@@ -414,12 +409,10 @@ class Main(QtGui.QMainWindow): # pylint: disable = E1101
 
         # self.popup_ok_window(larger_textures)
 
+        # reset dictionary values after above code is complete
         texture_analysis_dict["Larger Textures"] = []
-
         texture_analysis_dict["Already Sized Textures"] = []
-
         texture_analysis_dict["Not Power of 2"] = []
-
         texture_analysis_dict["Not Square"] = []
 
     def analyze_textures_to_resize(self, directory_path, dir_files, texture_dict, target_size):
@@ -535,38 +528,65 @@ class Main(QtGui.QMainWindow): # pylint: disable = E1101
         # launch popup to ask user if they are done with photoshop
         self.close_photoshop(ps_app)
 
-    def parse_texture_dirs_to_pack(self, ps_path):
-        """Based on user input, code will determine whether to iterate
-            through folders or across files to find textures to pack.
+    def parse_texture_dirs_to_pack(self, path):
+        """Parse through root directory and determine which actions to take.
+
+        Parses input root and uses self.scandir_to_dict to get the directory,
+        all subfolders and files into a dictionary format.
 
         Arguments:
-            ps_path {string} -- path to analyze
+            path {string} -- path to analyze
+            target_size {int} -- designated size to resize textures to
         """
 
-        # check to prevent execution with entred output suffix
+        texture_analysis_dict = {"Red": [], "Green": [], "Blue": [], "Alpha": []}
+
+        # check to prevent execution without entered output suffix
         if self.packed_texture_le.text():
 
             # precautionary check to make sure that there is an entry in the RGB channels
             if self.r_channel_le.text() and self.g_channel_le.text() and self.b_channel_le.text():
 
+                # use self.scandir_to_dict to walk across the root directory
+                # and output the values to a dictionary
+                scandir_list = self.scandir_to_dict(path)
 
-                scandir_list = self.scandir_to_dict(ps_path)
-
+                # iterate across list of dictionary that contains the
+                # root directory, subfolders, and files
                 for entry in scandir_list:
 
-                    self.pack_textures(entry)
+                    texture_analysis_dict = self.analyze_textures_to_pack(
+                        str(entry['Directory']), entry['Files'], texture_analysis_dict)
+
+                # if this key's list has values, run function to pack these textures
+                if texture_analysis_dict["Red"] and \
+                    texture_analysis_dict["Blue"] and texture_analysis_dict["Blue"]:
+
+                    # print str(texture_analysis_dict)
+                    self.pack_textures(texture_analysis_dict)
+
             else:
                 self.popup_ok_window('No Suffix Entred for all RGB Channels')
         else:
             self.popup_ok_window('No Suffix for Packed Texture')
 
-    def pack_textures(self, scandir_entry):
-        """Logic used to control Photoshop and copy flattened textures
-            into RGBA channels of a new texture.
+    def analyze_textures_to_pack(self, directory_path, dir_files, texture_dict):
+        """Analyze files within a directory and determine if the directory contains
+        the designate textures to pack.
+
+        Textures within the directory are iterated over and compared to the inputs
+        of the RGB QLineEdits and if there are matches, store those paths in another
+        dictionary to be used to pack the textures.
 
         Arguments:
-            scandir_entry {dictionary} -- input scandir generated dictionary to
-                                        iterate over.
+            directory_path {string} -- Input directory to analyze and parse through
+            dir_files {list} -- Input list of files to iterate through
+            texture_dict {dictionary} -- Dictionary used to store different scenarios
+                                            and return the results of the analysis
+
+        Returns:
+            dictionary -- After found textures are analyzed, they are stored in the
+                            dictionary variable to be used later for texture packing
         """
 
         # variables used to store paths of textures that match desired suffixes
@@ -577,136 +597,173 @@ class Main(QtGui.QMainWindow): # pylint: disable = E1101
         a_texture = ''
 
         # iterate over scandir_entries in a directory
-        for current_file in scandir_entry['Files']:
+        for current_file in dir_files:
 
-            # store current path
-            current_file_path = os.path.join( \
-                scandir_entry['Directory'], current_file)
+            # store current path by joining directory and the current file name
+            current_file_path = os.path.join(directory_path, current_file)
 
             # check if file extension exists in extension list
             if current_file.lower().endswith(self.extensions):
 
+                # series of conditions to check if the current file matches any
+                # of the QLineEdit inputs.
+                # secondary condition to check if the temporary string variable
+                # is empty.
                 if str(self.r_channel_le.text()) in current_file:
-                    print current_file
-                    r_texture = current_file_path
-
-                if str(self.b_channel_le.text()) in current_file:
-                    print current_file
-                    b_texture = current_file_path
+                    if not r_texture:
+                        print current_file
+                        r_texture = current_file_path
 
                 if str(self.g_channel_le.text()) in current_file:
-                    print current_file
-                    g_texture = current_file_path
+                    if not g_texture:
+                        print current_file
+                        g_texture = current_file_path
+
+                if str(self.b_channel_le.text()) in current_file:
+                    if not b_texture:
+                        print current_file
+                        b_texture = current_file_path
 
                 # similarly to RGB checks, will only check if A QLineEdit is enabled
                 if self.a_channel_le.isEnabled() and self.a_channel_le.text():
                     if str(self.a_channel_le.text()) in current_file:
-                        print current_file
-                        a_texture = current_file_path
+                        if not a_texture:
+                            print current_file
+                            a_texture = current_file_path
+
+            # print 'current file ' + current_file
+            # print 'current index ' + str(dir_files.index(current_file))
+            # print 'length ' + str(len(dir_files) - 1)
+
+            # if last iteration/element of directory files to search through
+            if dir_files.index(current_file) == len(dir_files) - 1:
 
                 # check if a value for R, G, and B is found to continue
                 # should run only once within each directory
                 # if a texture is found for RGB at least
                 if r_texture and g_texture and b_texture:
 
-                    # get version of Windows
-                    os_version = self.check_windows_version()
+                    texture_dict['Red'].append(r_texture)
+                    texture_dict['Green'].append(g_texture)
+                    texture_dict['Blue'].append(b_texture)
+                    texture_dict['Alpha'].append(a_texture)
 
-                    # open Photoshop
-                    ps_app = self.launch_photoshop(os_version)
+                # clear variables on last iteration
+                r_texture = ''
+                g_texture = ''
+                b_texture = ''
+                a_texture = ''
 
-                    # open texture matching designated suffix to be used for R Channel
-                    r_doc = ps_app.Open(r_texture)
+        # print str(texture_dict)
+        return texture_dict
 
-                    # get width and height of texture
-                    doc_width = r_doc.width
-                    doc_height = r_doc.height
+    def pack_textures(self, scandir_entry):
+        """Logic used to control Photoshop and copy flattened textures
+            into RGBA channels of a new texture.
 
-                    # selec and  copy contents of the layer in focus
-                    r_doc.selection.selectAll()
-                    r_doc.activeLayer.Copy()
+        Arguments:
+            scandir_entry {dictionary} -- input scandir generated dictionary to
+                                        iterate over.
+        """
 
-                    # use height and width variables to create new texture with same dimentions
-                    blank_doc = ps_app.Documents.Add(
-                        doc_width, doc_height, 72, 'new_document', 2, 1, 1)
 
-                    # blank_doc.channels['Red'] - equivalent to calling channel by name
-                    # activeChannels must receive an array
-                    blank_doc.activeChannels = [blank_doc.channels['Red']]
-                    blank_doc.Paste()
+        # get version of Windows
+        os_version = self.check_windows_version()
 
-                    # follows same flow as what was done for R Channel
-                    g_doc = ps_app.Open(g_texture)
-                    g_doc.selection.selectAll()
-                    g_doc.activeLayer.Copy()
+        # open Photoshop
+        ps_app = self.launch_photoshop(os_version)
 
-                    ps_app.activeDocument = blank_doc
-                    blank_doc.activeChannels = [blank_doc.channels['Green']]
-                    blank_doc.Paste()
+        # iterate over scandir_entries in a directory
+        for current_file in scandir_entry['Red']:
 
-                    # follows same flow as what was done for R and G Channels
-                    b_doc = ps_app.Open(b_texture)
-                    b_doc.selection.selectAll()
-                    b_doc.activeLayer.Copy()
+            current_index = scandir_entry['Red'].index(current_file)
 
-                    ps_app.activeDocument = blank_doc
-                    blank_doc.activeChannels = [blank_doc.channels['Blue']]
-                    blank_doc.Paste()
+            # open texture matching designated suffix to be used for R Channel
+            r_doc = ps_app.Open(scandir_entry['Red'][current_index])
 
-                    # close original textures without saving
-                    r_doc.Close(2)
-                    g_doc.Close(2)
-                    b_doc.Close(2)
+            # get width and height of texture
+            doc_width = r_doc.width
+            doc_height = r_doc.height
 
-                    # based on earlier A Channel checks
-                    # should only proceed if A Channel was desired
-                    if a_texture:
+            # selec and  copy contents of the layer in focus
+            r_doc.selection.selectAll()
+            r_doc.activeLayer.Copy()
 
-                        # follows same flow as what was done for R, G and B Channels
-                        a_doc = ps_app.Open(a_texture)
-                        a_doc.selection.selectAll()
-                        a_doc.activeLayer.Copy()
+            # use height and width variables to create new texture with same dimentions
+            blank_doc = ps_app.Documents.Add(
+                doc_width, doc_height, 72, 'new_document', 2, 1, 1)
 
-                        ps_app.activeDocument = blank_doc
-                        blank_doc.channels.add()
-                        # blank_doc.Name = 'Alpha 1'
-                        # blank_doc.Kind = 2  # = PsChannelType.psMaskedAreaAlphaChannel
-                        blank_doc.Paste()
+            # blank_doc.channels['Red'] - equivalent to calling channel by name
+            # activeChannels must receive an array
+            blank_doc.activeChannels = [blank_doc.channels['Red']]
+            blank_doc.Paste()
 
-                        a_doc.Close(2)
+            # follows same flow as what was done for R Channel
+            g_doc = ps_app.Open(scandir_entry['Green'][current_index])
+            g_doc.selection.selectAll()
+            g_doc.activeLayer.Copy()
 
-                    split_path, split_path_file_name = os.path.split(
-                        current_file_path)
+            ps_app.activeDocument = blank_doc
+            blank_doc.activeChannels = [blank_doc.channels['Green']]
+            blank_doc.Paste()
 
-                    file_name, file_ext = os.path.splitext(split_path_file_name)
+            # follows same flow as what was done for R and G Channels
+            b_doc = ps_app.Open(scandir_entry['Blue'][current_index])
+            b_doc.selection.selectAll()
+            b_doc.activeLayer.Copy()
 
-                    # gets first element of split from '_' based on naming convention at BBA
-                    split_file_name = file_name.split('_')
+            ps_app.activeDocument = blank_doc
+            blank_doc.activeChannels = [blank_doc.channels['Blue']]
+            blank_doc.Paste()
 
-                    if len(split_file_name) > 1:
-                        split_file_name.pop()
-                        split_file_name = '_'.join(split_file_name)
-                    else:
-                        split_file_name = split_file_name[0]
+            # close original textures without saving
+            r_doc.Close(2)
+            g_doc.Close(2)
+            b_doc.Close(2)
 
-                    new_file_name = str(split_file_name) + \
-                        str(self.packed_texture_le.text()) + file_ext
+            # based on earlier A Channel checks
+            # should only proceed if A Channel was desired
+            if scandir_entry['Alpha'][current_index]:
 
-                    new_file_name_path = os.path.join(split_path, new_file_name)
+                # follows same flow as what was done for R, G and B Channels
+                a_doc = ps_app.Open(scandir_entry['Alpha'][current_index])
+                a_doc.selection.selectAll()
+                a_doc.activeLayer.Copy()
 
-                    # if there is an alpha input be sure to export TGA with alpha option on
-                    if a_texture:
-                        self.save_tga(os_version, ps_app, new_file_name_path, True)
-                    else:
-                        self.save_tga(os_version, ps_app, new_file_name_path)
+                ps_app.activeDocument = blank_doc
+                blank_doc.channels.add()
+                # blank_doc.Name = 'Alpha 1'
+                # blank_doc.Kind = 2  # = PsChannelType.psMaskedAreaAlphaChannel
+                blank_doc.Paste()
 
-                    blank_doc.Close(2)
+                a_doc.Close(2)
 
-                    # clear variables after packed texture is exported
-                    r_texture = ''
-                    g_texture = ''
-                    b_texture = ''
-                    a_texture = ''
+            split_path, split_path_file_name = os.path.split(
+                current_file)
+
+            file_name, file_ext = os.path.splitext(split_path_file_name)
+
+            # gets first element of split from '_' based on naming convention at BBA
+            split_file_name = file_name.split('_')
+
+            if len(split_file_name) > 1:
+                split_file_name.pop()
+                split_file_name = '_'.join(split_file_name)
+            else:
+                split_file_name = split_file_name[0]
+
+            new_file_name = str(split_file_name) + \
+                str(self.packed_texture_le.text()) + file_ext
+
+            new_file_name_path = os.path.join(split_path, new_file_name)
+
+            # if there is an alpha input be sure to export TGA with alpha option on
+            if scandir_entry['Alpha'][current_index]:
+                self.save_tga(os_version, ps_app, new_file_name_path, True)
+            else:
+                self.save_tga(os_version, ps_app, new_file_name_path)
+
+            blank_doc.Close(2)
 
         # after using photoshop, prompt and ask user if they are done using photoshop
         self.close_photoshop(ps_app)
