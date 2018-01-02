@@ -15,8 +15,8 @@
 
 import os
 import sys
-import scandir
 import platform
+import scandir
 import comtypes.client
 
 # from _ctypes import COMError
@@ -25,6 +25,9 @@ from PIL import Image
 from PyQt4 import QtGui
 from PyQt4 import QtCore
 
+# Global Variables -------------------------------------------------------------
+EXTENSIONS = ('.tga', '.png', '.jpg')
+TEXTURE_SIZES = (4096, 2048, 1024, 512, 256, 128, 64)
 
 class Main(QtGui.QMainWindow):  # pylint: disable = E1101
     '''
@@ -48,19 +51,13 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
         """
 
         # ==============================================================================
-        # Global Variables
-        # ==============================================================================
-
-        self.extensions = ('.tga', '.png', '.jpg')
-        self.texture_sizes = (4096, 2048, 1024, 512, 256, 128, 64)
-
-        # ==============================================================================
         # PYQT Widget Defintions
         # ==============================================================================
 
         # window title
         self.setWindowTitle('Pyotoshop')
 
+        # sets ToolTip font for the UI
         QtGui.QToolTip.setFont(QtGui.QFont('SansSerif', 10)) # pylint: disable = E1101
 
         # main widget ------------------------------------------------------------------
@@ -98,7 +95,7 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
         # creates combobox for texture sizes
         self.texture_size_combobox = QtGui.QComboBox()  # pylint: disable = E1101
 
-        for sizes in self.texture_sizes:
+        for sizes in TEXTURE_SIZES:
             self.texture_size_combobox.addItem(
                 QtCore.QString(str(sizes)))  # pylint: disable = E1101
 
@@ -292,7 +289,8 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
             self.a_channel_le.setEnabled(False)
             self.output_format_lbl.setText('24bit .tga')
 
-    def scandir_to_dict(self, path):
+    @classmethod
+    def scandir_to_dict(cls, path):
         """Use scandir walk function to parse directories.
 
         The scandir package was developed by Ben Hoyt and incorporated into Python 3.5.
@@ -411,10 +409,10 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
             current_file_path = os.path.join(directory_path, current_file)
 
             # check if file extension exists in extension list
-            if current_file.lower().endswith(self.extensions):
-                # s variable used to iterate over self.texture_sizes tuple
+            if current_file.lower().endswith(EXTENSIONS):
+                # s variable used to iterate over TEXTURE_SIZES tuple
                 # x current element being processed in directory
-                if any(str(s) in current_file for s in self.texture_sizes):
+                if any(str(s) in current_file for s in TEXTURE_SIZES):
                     texture_dict["Already Sized Textures"].append(
                         current_file)
                 else:
@@ -475,8 +473,8 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
 
             progdialog.setValue(current_index)
 
-            progdialog.setLabelText("Resizing %s..." %
-                list_to_resize[current_index])
+            progdialog.setLabelText("Resizing %s..." \
+                % list_to_resize[current_index])
 
             # incase Photoshop was already open, make current
             # document the active document
@@ -578,7 +576,7 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
             current_file_path = os.path.join(directory_path, current_file)
 
             # check if file extension exists in extension list
-            if current_file.lower().endswith(self.extensions):
+            if current_file.lower().endswith(EXTENSIONS):
 
                 # series of conditions to check if the current file matches any
                 # of the QLineEdit channel inputs.
@@ -659,8 +657,8 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
 
             progdialog.setValue(current_index)
 
-            progdialog.setLabelText("Packing %s..." %
-                scandir_entry['Red'][current_index])
+            progdialog.setLabelText("Packing %s..." \
+                % scandir_entry['Red'][current_index])
 
             # open texture matching designated suffix to be used for R Channel
             r_doc = ps_app.Open(scandir_entry['Red'][current_index])
@@ -682,8 +680,8 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
             blank_doc.activeChannels = [blank_doc.channels['Red']]
             blank_doc.Paste()
 
-            progdialog.setLabelText("Packing %s..." %
-                scandir_entry['Green'][current_index])
+            progdialog.setLabelText("Packing %s..." \
+                % scandir_entry['Green'][current_index])
 
             # follows same flow as what was done for R Channel
             g_doc = ps_app.Open(scandir_entry['Green'][current_index])
@@ -694,8 +692,8 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
             blank_doc.activeChannels = [blank_doc.channels['Green']]
             blank_doc.Paste()
 
-            progdialog.setLabelText("Packing %s..." %
-                scandir_entry['Blue'][current_index])
+            progdialog.setLabelText("Packing %s..." \
+                % scandir_entry['Blue'][current_index])
 
             # follows same flow as what was done for R and G Channels
             b_doc = ps_app.Open(scandir_entry['Blue'][current_index])
@@ -715,8 +713,8 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
             # should only proceed if A Channel was desired
             if scandir_entry['Alpha'][current_index]:
 
-                progdialog.setLabelText("Packing %s..." %
-                    scandir_entry['Alpha'][current_index])
+                progdialog.setLabelText("Packing %s..." \
+                    % scandir_entry['Alpha'][current_index])
 
                 # follows same flow as what was done for R, G and B Channels
                 a_doc = ps_app.Open(scandir_entry['Alpha'][current_index])
