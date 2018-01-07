@@ -1,14 +1,14 @@
 """
-# ==============================================================================
+# =============================================================================
 # title           :Pyotoshop.py
-# description     :Script used to automate Photoshop operations across several files
+# description     :Automate Photoshop operations across several files
 # author          :Doug Halley
-# date            :2018-01-02
-# version         :13.0
+# date            :2018-01-06
+# version         :15.0
 # usage           :Standalone Python Application Executed by Pyotoshop.exe
 # python_version  :2.7.14
 # pyqt_version    :4.11.4
-# ==============================================================================
+# =============================================================================
 """
 
 import os
@@ -17,23 +17,24 @@ import platform
 import scandir
 import comtypes.client
 
-# from _ctypes import COMError
 from PIL import Image
 
 from PyQt4 import QtGui
 from PyQt4 import QtCore
 
-# Global Variables -------------------------------------------------------------
+# Global Variables ------------------------------------------------------------
 EXTENSIONS = ('.tga', '.png', '.jpg')
 TEXTURE_SIZES = (4096, 2048, 1024, 512, 256, 128, 64)
 
-class Main(QtGui.QMainWindow):  # pylint: disable = E1101
+
+class Main(QtGui.QMainWindow):
     '''
     The class that contains, defines, and creates the UI.
     '''
 
     def __init__(self, parent=None):
         """Initilizes the PyQt Interface.
+
         Keyword Arguments:
             parent {None} -- By having no parent, ui can be standalone
                                 (default: {None})
@@ -44,96 +45,132 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
 
     def create_ui(self):
         """Creates the PyQt Interface.
+
         All the PyQt logic needed is contained in this function,
         including the PyQt elements and connect functions.
         """
 
-        # ==============================================================================
+        # =====================================================================
         # PYQT Widget Defintions
-        # ==============================================================================
+        # =====================================================================
 
         # window title
         self.setWindowTitle('Pyotoshop')
 
         # sets ToolTip font for the UI
-        QtGui.QToolTip.setFont(QtGui.QFont('SansSerif', 10)) # pylint: disable = E1101
+        QtGui.QToolTip.setFont(QtGui.QFont('SansSerif', 10))
 
-        # main widget ------------------------------------------------------------------
-        central_widget = QtGui.QWidget()  # pylint: disable = E1101
-        central_widget.setLayout(QtGui.QVBoxLayout())  # pylint: disable = E1101
+        # main widget ---------------------------------------------------------
+        central_widget = QtGui.QWidget()
+        central_widget.setLayout(QtGui.QVBoxLayout())
 
-        # Search Directory widget ------------------------------------------------------
-        input_dir_widget = QtGui.QVBoxLayout()  # pylint: disable = E1101
+        # Search Directory QFormLayout-----------------------------------------
+        add_dir_widget = QtGui.QFormLayout()
 
-        self.add_directory = QtGui.QPushButton(  # pylint: disable = E1101
-            'Choose Directory')
-        self.add_directory.setToolTip(
+        # Resize texture button layout, child of central_widget ---------------
+        add_directory_btn_layout = QtGui.QHBoxLayout()
+
+        # Spacer used to place add_directory_btn in the center of the ui
+        add_directory_btn_spacer = QtGui.QSpacerItem(0, 0)
+
+        add_directory_btn = QtGui.QPushButton('Choose Directory')
+        add_directory_btn.setToolTip(
             'Select Directory that contains textures to be processed')
+        add_directory_btn.setFixedWidth(150)
 
-        dir_name_lbl = QtGui.QLabel(  # pylint: disable = E1101
-            'Selected Directory:')
-        dir_name_lbl.setAlignment(QtCore.Qt.AlignCenter)  # pylint: disable = E1101
+        dir_name_lbl = QtGui.QLabel('Selected Directory:')
+        dir_name_lbl.setAlignment(QtCore.Qt.AlignCenter)
 
-        directory_lbl = QtGui.QLabel('')  # pylint: disable = E1101
-        directory_lbl.setAlignment(QtCore.Qt.AlignCenter)  # pylint: disable = E1101
-
+        directory_lbl = QtGui.QLabel('')
+        directory_lbl.setAlignment(QtCore.Qt.AlignCenter)
         directory_lbl.setWordWrap(True)
 
-        # parent widget for texture resizer elements -----------------------------------
-        texture_resizer_widget = QtGui.QWidget()  # pylint: disable = E1101
-        texture_resizer_widget.setLayout(
-            QtGui.QVBoxLayout())  # pylint: disable = E1101
+        # parent widget for texture resizer elements,
+        # child of texture_tools_tab_widget -----------------------------------
+        texture_resizer_widget = QtGui.QWidget()
+        texture_resizer_widget.setLayout(QtGui.QVBoxLayout())
 
-        # layout for combobox that contains varying texture sizes ----------------------
-        texture_size_layout = QtGui.QHBoxLayout()  # pylint: disable = E1101
+        texture_resize_description_lbl = QtGui.QLabel(
+            'Finds textures that are larger than the target size and ' +
+            'resizes textures accordingly into a duplicate file.')
+        texture_resize_description_lbl.setAlignment(QtCore.Qt.AlignCenter)
+        texture_resize_description_lbl.setWordWrap(True)
 
-        texture_size_lbl = QtGui.QLabel(  # pylint: disable = E1101
-            'Target Texture Size: ')
+        # layout for combobox that contains varying texture sizes
+        # child of target_texture_size_combobox_layout ------------------------
+        target_texture_size_formlayout = QtGui.QFormLayout()
+        target_texture_size_formlayout.setRowWrapPolicy(
+            QtGui.QFormLayout.DontWrapRows)
+        target_texture_size_formlayout.setFieldGrowthPolicy(
+            QtGui.QFormLayout.FieldsStayAtSizeHint)
+        target_texture_size_formlayout.setLabelAlignment(QtCore.Qt.AlignRight)
+        target_texture_size_formlayout.setFormAlignment(QtCore.Qt.AlignVCenter)
+
+        # Resize texture button layout, child of texture_resizer_widget -------
+        target_texture_size_combobox_layout = QtGui.QHBoxLayout()
+
+        # Spacer used to place add_directory_btn in the center of the ui
+        target_texture_size_combobox_l_spacer = QtGui.QSpacerItem(30, 50)
+        target_texture_size_combobox_r_spacer = QtGui.QSpacerItem(10, 50)
 
         # creates combobox for texture sizes
-        self.texture_size_combobox = QtGui.QComboBox()  # pylint: disable = E1101
-
-        for sizes in TEXTURE_SIZES:
-            self.texture_size_combobox.addItem(
-                QtCore.QString(str(sizes)))  # pylint: disable = E1101
-
-        self.texture_size_combobox.setToolTip(
+        self.target_texture_size_combobox = QtGui.QComboBox()
+        self.target_texture_size_combobox.setFixedWidth(50)
+        self.target_texture_size_combobox.setToolTip(
             'Available sizes to resize textures to a smaller resolution.')
 
-        self.resize_textures_btn = QtGui.QPushButton(  # pylint: disable = E1101
-            'Resize Textures')
+        for sizes in TEXTURE_SIZES:
+            self.target_texture_size_combobox.addItem(
+                QtCore.QString(str(sizes)))
 
-        self.resize_textures_btn.setToolTip(
-            'Resize available textures.')
+        # texture_resize_btn_layout, child of texture_resizer_widget ----------
+        texture_resize_btn_layout = QtGui.QHBoxLayout()
 
-        # Texture Packer widget to contain all elements need to run this tool ----------
-        texture_packer_widget = QtGui.QWidget()  # pylint: disable = E1101
-        texture_packer_widget.setLayout(QtGui.QVBoxLayout())  # pylint: disable = E1101
+        # Spacer used to place pack_textures_btn in the center of the ui
+        resize_pack_btn_spacer = QtGui.QSpacerItem(10, 5)
 
-        # Input Channel form layout, child of texture_packer_widget --------------------
-        input_channel_layout = QtGui.QFormLayout()  # pylint: disable = E1101
+        resize_textures_btn = QtGui.QPushButton('Resize Textures')
+        resize_textures_btn.setToolTip('Resize available textures.')
+        resize_textures_btn.setFixedWidth(150)
 
-        channel_inputs_lbl = QtGui.QLabel(  # pylint: disable = E1101
-            'Input Textures to Pack')
-        channel_inputs_lbl.setAlignment(
-            QtCore.Qt.AlignCenter)  # pylint: disable = E1101
+        # Texture Packer widget to contain all elements need to run this tool -
+        texture_packer_widget = QtGui.QWidget()
+        texture_packer_widget.setLayout(QtGui.QVBoxLayout())
+        texture_packer_widget.layout().setAlignment(QtCore.Qt.AlignRight)
 
-        self.r_channel_le = QtGui.QLineEdit('')  # pylint: disable = E1101
-        self.g_channel_le = QtGui.QLineEdit('')  # pylint: disable = E1101
-        self.b_channel_le = QtGui.QLineEdit('')  # pylint: disable = E1101
+        # input_channel_formlayout, child of texture_packer_widget ------------
+        input_channel_formlayout = QtGui.QFormLayout()
+        input_channel_formlayout.setRowWrapPolicy(
+            QtGui.QFormLayout.DontWrapRows)
+        input_channel_formlayout.setFieldGrowthPolicy(
+            QtGui.QFormLayout.FieldsStayAtSizeHint)
+        input_channel_formlayout.setLabelAlignment(QtCore.Qt.AlignRight)
+        input_channel_formlayout.setFormAlignment(QtCore.Qt.AlignVCenter)
 
-        a_channel_layout = QtGui.QHBoxLayout()  # pylint: disable = E1101
+        texture_pack_description_lbl = QtGui.QLabel(
+            'Finds textures that having matching suffixes and ' +
+            'packs them into a new texture.')
+        texture_pack_description_lbl.setAlignment(QtCore.Qt.AlignCenter)
+        texture_pack_description_lbl.setWordWrap(True)
+
+        channel_inputs_lbl = QtGui.QLabel(
+            '- Enter Suffixes of Texture Files to Search for -')
+        channel_inputs_lbl.setAlignment(QtCore.Qt.AlignCenter)
+
+        self.r_channel_le = QtGui.QLineEdit('')
+        self.g_channel_le = QtGui.QLineEdit('')
+        self.b_channel_le = QtGui.QLineEdit('')
 
         # QCheckbox is initialized at false
-        self.a_channel_checkbox = QtGui.QCheckBox(  # pylint: disable = E1101
-            'A Channel')
+        self.a_channel_checkbox = QtGui.QCheckBox('A Channel')
         self.a_channel_checkbox.setChecked(False)
 
         self.a_channel_checkbox.setToolTip(
-            'Toggle whether or not an alpha channel is included in texture packing')
+            'Toggle whether or not an alpha ' +
+            'channel is included in texture packing')
 
         # QLineEdit is initialized at false
-        self.a_channel_le = QtGui.QLineEdit('')  # pylint: disable = E1101
+        self.a_channel_le = QtGui.QLineEdit('')
         self.a_channel_le.setEnabled(False)
 
         channel_placeholder = 'Enter Suffix Here...'
@@ -142,110 +179,139 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
         self.b_channel_le.setPlaceholderText(channel_placeholder)
         self.a_channel_le.setPlaceholderText(channel_placeholder)
 
-        channel_tool_tip = 'Enter suffix for texture to search for packing'
+        channel_tool_tip = 'Enter suffix for texture to search'
         self.r_channel_le.setToolTip(channel_tool_tip)
         self.g_channel_le.setToolTip(channel_tool_tip)
         self.b_channel_le.setToolTip(channel_tool_tip)
         self.a_channel_le.setToolTip(channel_tool_tip)
 
-        # output format layout declaration to contain string stating the output format -
-        # child widgets of input_channel_layout ----------------------------------------
-        output_texture_layout = QtGui.QHBoxLayout()  # pylint: disable = E1101
+        self.r_channel_le.setFixedWidth(110)
+        self.g_channel_le.setFixedWidth(110)
+        self.b_channel_le.setFixedWidth(110)
+        self.a_channel_le.setFixedWidth(110)
 
-        output_format_lbl = QtGui.QLabel(  # pylint: disable = E1101
-            'Output Packed Texture - 24 bit .tga')
+        output_format_lbl = \
+            QtGui.QLabel('- Packed Texture Format - 24 bit .tga -')
+        output_format_lbl.setAlignment(QtCore.Qt.AlignCenter)
 
-        output_format_lbl.setAlignment(
-            QtCore.Qt.AlignCenter)  # pylint: disable = E1101
-
-        self.packed_texture_le = QtGui.QLineEdit('')  # pylint: disable = E1101
-
-        self.pack_textures_btn = QtGui.QPushButton(  # pylint: disable = E1101
-            'Pack Textures')
-
+        self.packed_texture_le = QtGui.QLineEdit('')
+        self.packed_texture_le.setPlaceholderText(channel_placeholder)
         self.packed_texture_le.setToolTip(
             'Enter suffix to add to the created packed texture')
-        self.pack_textures_btn.setToolTip(
-            'Create packed texture from textures with input suffixes')
+        self.packed_texture_le.setFixedWidth(110)
 
-        # ================================================================================
+        # Output texture_pack_btn_layout,
+        # child of input_channel_formlayout -----------------------------------
+        texture_pack_btn_layout = QtGui.QHBoxLayout()
+
+        # Spacer used to place pack_textures_btn in the center of the ui
+        texture_pack_btn_spacer = QtGui.QSpacerItem(10, 5)
+
+        pack_textures_btn = QtGui.QPushButton('Create Packed Textures')
+        pack_textures_btn.setToolTip(
+            'Pack texture that contain input suffixes into a new texture')
+        pack_textures_btn.setFixedWidth(150)
+
+        # =====================================================================
         # PYQT Widget Assignments
-        # ================================================================================
+        # =====================================================================
 
-        # Assigments for texture resizer widget ------------------------------------------
-        texture_size_layout.addWidget(texture_size_lbl)
-        texture_size_layout.addWidget(self.texture_size_combobox)
+        # Assigments for add_directory_btn_layout -----------------------------
 
-        # Assigments for texture packer parent widget ------------------------------------
-        texture_resizer_widget.layout().addLayout(texture_size_layout)
-        texture_resizer_widget.layout().addWidget(self.resize_textures_btn)
+        add_directory_btn_layout.addItem(add_directory_btn_spacer)
+        add_directory_btn_layout.addWidget(add_directory_btn)
 
-        # Assigments for texture packer childeren widgets --------------------------------
-        input_dir_widget.addWidget(self.add_directory)
-        input_dir_widget.addWidget(dir_name_lbl)
-        input_dir_widget.addWidget(directory_lbl)
+        add_dir_widget.addRow(add_directory_btn_layout)
+        add_dir_widget.addRow(dir_name_lbl)
 
-        a_channel_layout.addWidget(self.a_channel_checkbox)
-        a_channel_layout.addWidget(self.a_channel_le)
+        # Assigments for texture_pack_btn_layout ------------------------------
 
-        output_texture_layout.addWidget(output_format_lbl)
+        texture_pack_btn_layout.addItem(texture_pack_btn_spacer)
+        texture_pack_btn_layout.addWidget(pack_textures_btn)
 
-        input_channel_layout.addRow(channel_inputs_lbl)
+        # Assigments for input_channel_formlayout -----------------------------
 
-        input_channel_layout.addRow(
-            QtCore.QString('R Channel'), self.r_channel_le)  # pylint: disable = E1101
-        input_channel_layout.addRow(
-            QtCore.QString('G Channel'), self.g_channel_le)  # pylint: disable = E1101
-        input_channel_layout.addRow(
-            QtCore.QString('B Channel'), self.b_channel_le)  # pylint: disable = E1101
-        input_channel_layout.addRow(a_channel_layout)
+        input_channel_formlayout.addRow(channel_inputs_lbl)
+        input_channel_formlayout.addRow(
+            QtGui.QLabel('R Channel'), self.r_channel_le)
+        input_channel_formlayout.addRow(
+            QtGui.QLabel('G Channel'), self.g_channel_le)
+        input_channel_formlayout.addRow(
+            QtGui.QLabel('B Channel'), self.b_channel_le)
+        input_channel_formlayout.addRow(self.a_channel_checkbox,
+                                        self.a_channel_le)
+        input_channel_formlayout.addRow(output_format_lbl)
+        input_channel_formlayout.addRow(
+            QtGui.QLabel('Packed Texture'), self.packed_texture_le)
 
-        input_channel_layout.addRow(output_texture_layout)
+        input_channel_formlayout.addRow(texture_pack_btn_layout)
 
-        input_channel_layout.addRow(
-            QtCore.QString('Packed Texture'), self.packed_texture_le)  # pylint: disable = E1101
+        # Assigments for texture_packer_widget --------------------------------
 
-        texture_packer_widget.layout().addLayout(input_channel_layout)
-        texture_packer_widget.layout().addWidget(self.pack_textures_btn)
+        texture_packer_widget.layout().addLayout(input_channel_formlayout)
 
-        # tab widget to contain all the subset tools -----------------------------------
-        # child widgets of central_widget ----------------------------------------------
-        texture_tools_tab_widget = QtGui.QTabWidget()  # pylint: disable = E1101
-        texture_tools_tab_widget.setLayout(
-            QtGui.QHBoxLayout())  # pylint: disable = E1101
+        # tab widget to contain all the subset tools --------------------------
+        # child widgets of central_widget -------------------------------------
+        texture_tools_tab_widget = QtGui.QTabWidget()
+        texture_tools_tab_widget.setLayout(QtGui.QHBoxLayout())
 
-        texture_tools_tab_widget.addTab(
-            texture_packer_widget, 'Pack Textures')
-        texture_tools_tab_widget.addTab(
-            texture_resizer_widget, 'Resize Textures')
-
+        texture_tools_tab_widget.addTab(texture_packer_widget, 'Pack Textures')
+        texture_tools_tab_widget.addTab(texture_resizer_widget,
+                                        'Resize Textures')
         texture_tools_tab_widget.setEnabled(False)
 
-        # adds directiory widget and tool widgets to central widget ---------------------
-        central_widget.layout().addLayout(input_dir_widget)
+        # Assigments for target_texture_size_formlayout -----------------------
+        target_texture_size_formlayout.addRow(
+            QtGui.QLabel('Target Texture Size:'),
+            self.target_texture_size_combobox)
+
+        # Assigments for texture resizer QFormLayout with spacers -------------
+        target_texture_size_combobox_layout.addItem(
+            target_texture_size_combobox_l_spacer)
+
+        target_texture_size_combobox_layout.addLayout(
+            target_texture_size_formlayout)
+
+        target_texture_size_combobox_layout.addItem(
+            target_texture_size_combobox_r_spacer)
+
+        # Assigments for texture resize button layout -------------------------
+        texture_resize_btn_layout.addItem(resize_pack_btn_spacer)
+        texture_resize_btn_layout.addWidget(resize_textures_btn)
+
+        # Assigments for texture packer parent widget -------------------------
+        texture_resizer_widget.layout().addWidget(
+            texture_resize_description_lbl)
+        texture_resizer_widget.layout().addLayout(
+            target_texture_size_combobox_layout)
+        texture_resizer_widget.layout().addLayout(texture_resize_btn_layout)
+
+        # adds directiory widget and tab widgets to central widget ------------
+        central_widget.layout().addLayout(add_dir_widget)
+        central_widget.layout().addWidget(directory_lbl)
         central_widget.layout().addWidget(texture_tools_tab_widget)
 
         # sets central widget for PyQt window
         self.setCentralWidget(central_widget)
-
         self.setFixedSize(self.sizeHint())
 
-        # ================================================================================
+        # =====================================================================
         # PYQT Execution Connections
-        # ================================================================================
+        # =====================================================================
 
         # triggers for buttons
-        self.add_directory.clicked.connect(lambda: self.get_directory( \
-            directory_lbl, texture_tools_tab_widget))  # pylint: disable = W0108
+        add_directory_btn.clicked.connect(lambda: self.get_directory(
+            directory_lbl, texture_tools_tab_widget))
 
-        self.resize_textures_btn.clicked.connect(
+        resize_textures_btn.clicked.connect(
             lambda: self.parse_texture_to_resize(str(directory_lbl.text())))
 
-        self.pack_textures_btn.clicked.connect(
+        pack_textures_btn.clicked.connect(
             lambda: self.parse_texture_dirs_to_pack(str(directory_lbl.text())))
 
-        self.a_channel_checkbox.toggled.connect(lambda: self.toggle_alpha_input(
-            self.a_channel_checkbox, self.a_channel_le, output_format_lbl))
+        self.a_channel_checkbox.toggled.connect(
+            lambda: self.toggle_alpha_input(
+                self.a_channel_checkbox, self.a_channel_le, output_format_lbl))
 
     @classmethod
     def get_directory(cls, directory_lbl, tab_widget):
@@ -254,9 +320,9 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
         Creates QFileDialog to find and store designated folder
         """
 
-        dlg = QtGui.QFileDialog.getExistingDirectory(  # pylint: disable = E1101
-            None, 'Select a folder:', 'C:\\Users\\desktop', \
-            QtGui.QFileDialog.ShowDirsOnly)  # pylint: disable = E1101
+        dlg = QtGui.QFileDialog.getExistingDirectory(
+            None, 'Select a folder:', 'C:\\Users\\desktop',
+            QtGui.QFileDialog.ShowDirsOnly)
 
         directory_lbl.setText(dlg)
 
@@ -275,29 +341,36 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
         a_channel_le is enabled or disabled
 
         Arguments:
-            checkbox {QCheckBox} -- If checkbox is checked set parameters of other Q-Objects
-            line_edit {QLineEdit} -- enabled or disabled based on checkbox parameter
-            label_text {QLabel} -- text displays differently based on checkbox parameter
+            checkbox {QCheckBox} -- If checkbox is checked
+                set parameters of other Q-Objects
+            line_edit {QLineEdit} -- enabled or disabled
+                based on checkbox parameter
+            label_text {QLabel} -- text displays differently
+                based on checkbox parameter
         """
 
         if checkbox.isChecked():
             line_edit.setEnabled(True)
-            label_text.setText('Output Packed Texture - 32 bit .tga')
+            label_text.setText('- Packed Texture Format - 32 bit .tga -')
         else:
             line_edit.setEnabled(False)
-            label_text.setText('Output Packed Texture - 24 bit .tga')
+            label_text.setText('- Packed Texture Format - 24 bit .tga -')
 
     @classmethod
     def scandir_to_dict(cls, path):
         """Use scandir walk function to parse directories.
 
-        The scandir package was developed by Ben Hoyt and incorporated into Python 3.5.
+        The scandir package was developed by Ben Hoyt and
+        incorporated into Python 3.5.
         He wrote a blogpost about it here:
         http://benhoyt.com/writings/scandir/
 
-        When developing with os.walk I noticed that there are extra iterations happening.
-        They are not apparent because the conditional statements I set up only show what
-        I want to see. Inherently, to my understanding, os.walk will iterate across each
+        When developing with os.walk I noticed that there are extra
+        iterations happening.
+        They are not apparent because the conditional statements I
+        set up only show what
+        I want to see. Inherently, to my understanding, os.walk will
+        iterate across each
         directory and each file in each directory.
 
         By contrast scandir makes a tuple for each directory.
@@ -341,13 +414,17 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
         """Parse through root directory and determine which actions to take.
         Parses input root and uses self.scandir_to_dict to get the directory,
         all subfolders and files into a dictionary format.
+
         Arguments:
             path {string} -- path to analyze
         """
 
         # dictionary used to collect images larger than target_size
-        texture_analysis_dict = {"Larger Textures": [], "Already Sized Textures": [], \
-                                    "Not Power of 2": [], "Not Square": []}
+        texture_analysis_dict = {
+            "Larger Textures": [],
+            "Already Sized Textures": [],
+            "Not Power of 2": [],
+            "Not Square": []}
 
         # use self.scandir_to_dict to walk across the root directory
         # and output the values to a dictionary
@@ -360,7 +437,7 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
             # print str(entry)
             texture_analysis_dict = self.analyze_textures_to_resize(
                 str(entry['Directory']), entry['Files'], texture_analysis_dict)
-
+        print texture_analysis_dict["Larger Textures"]
         # if this key's list has values, run function to resize these textures
         if texture_analysis_dict["Larger Textures"]:
 
@@ -368,11 +445,11 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
 
             # larger_textures = '\n'.join(
             #     str(x) for x in texture_analysis_dict["Larger Textures"])
-        # else:
-        #     larger_textures = 'No Textures found larger than ' + \
-        #         self.texture_size_combobox.currentText() + ' were found'
+        else:
+            # larger_textures = 'No Textures found larger than ' + \
+            #     self.texture_size_combobox.currentText() + ' were found'
 
-        # self.popup_ok_window(larger_textures)
+            self.popup_ok_window('No Textures found to resize')
 
         # reset dictionary values after above code is complete
         texture_analysis_dict["Larger Textures"] = []
@@ -380,22 +457,29 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
         texture_analysis_dict["Not Power of 2"] = []
         texture_analysis_dict["Not Square"] = []
 
-    def analyze_textures_to_resize(self, directory_path, dir_files, texture_dict):
+    def analyze_textures_to_resize(
+            self, directory_path, dir_files, texture_dict):
         """Parse directories to find textures and resize them.
-        This function does a preliminary scan of the directory given by the user.
-        If texture files are found they are analyzed and their resolution is compared
-        to the input resolution to determine the appopriate action to take.
-        If textures are found to be larger than the input, photoshop is opened and the
-        texture is resized and a duplicate is saved. The file names of the duplicate
-        files are modified to reflect the texture size they have been scaled to.
+        This function does a preliminary scan of the directory
+        given by the user.
+        If texture files are found they are analyzed and their
+        resolution is compared to the input resolution to determine
+        the appopriate action to take.
+        If textures are found to be larger than the input, photoshop is
+        opened and the texture is resized and a duplicate is saved. The file
+        names of the duplicate files are modified to reflect the texture size
+        they have been scaled to.
+
         Arguments:
-            directory_path {string} -- Input directory to analyze and parse through
+            directory_path {string} -- Input directory to analyze and
+                parse through
             dir_files {list} -- Input list of files to iterate through
-            texture_dict {dictionary} -- Dictionary used to store different scenarios
-                                            and return the results of the analysis
+            texture_dict {dictionary} -- Dictionary used to store
+                different scenarios and return the results of the analysis
+
         Returns:
-            dictionary -- After found textures are analyzed, they are stored in the
-                            dictionary variable to be used later
+            dictionary -- After found textures are analyzed,
+                they are stored in the dictionary variable to be used later
         """
 
         # iterate over scandir_entries in found subdirectory
@@ -405,6 +489,7 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
 
             # check if file extension exists in extension list
             if current_file.lower().endswith(EXTENSIONS):
+
                 # s variable used to iterate over TEXTURE_SIZES tuple
                 # x current element being processed in directory
                 if any(str(s) in current_file for s in TEXTURE_SIZES):
@@ -422,13 +507,19 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
                         # if width/height are equal,
                         # use either value to check if power of 2
                         if self.is_power2(size_of_image[0]):
-                            # print current_file_path + ' - ' + '{0}'.format(size_of_image)
+                            # print current_file_path + ' - ' + \
+                            #   '{0}'.format(size_of_image)
                             # count_tileable = count_tileable + 1
 
-                            if size_of_image[0] < self.texture_size_combobox.currentText():
+                            if int(size_of_image[0]) > int(
+                                    self.target_texture_size_combobox
+                                    .currentText()):
                                 # testPrint = testPrint + imagePath + '\n'
                                 texture_dict["Larger Textures"].append(
                                     current_file_path)
+                            else:
+                                print current_file_path + ' - ' + \
+                                    '{0}'.format(size_of_image)
                         else:
                             texture_dict["Not Power of 2"].append(current_file)
                     else:
@@ -440,6 +531,7 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
         """Resize and export process textures.
         Logic to control Photoshop, resize textures, and save as a new texture
         and include the new size in the file name
+
         Arguments:
             list_to_resize {list} -- List of textures designated to be resized
         """
@@ -466,9 +558,11 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
             # document the active document
             ps_app.Application.ActiveDocument  # pylint: disable = W0104
 
+            target_resolution = \
+                int(self.target_texture_size_combobox.currentText())
+
             # call the Photoshop resize operation
-            current_ps_doc.resizeImage(self.texture_size_combobox.currentText(),
-                self.texture_size_combobox.currentText())
+            current_ps_doc.resizeImage(target_resolution, target_resolution)
 
             new_file_name = self.new_file_name(texture_path, True)
 
@@ -486,7 +580,7 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
         progdialog.close()
 
         # launch popup to ask user if they are done with photoshop
-        self.close_photoshop(ps_app)
+        self.close_photoshop('Completed Texture Resizing!', ps_app)
 
     def parse_texture_dirs_to_pack(self, path):
         """Parse through root directory and determine which actions to take.
@@ -496,14 +590,19 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
             path {string} -- path to analyze
         """
 
-        texture_analysis_dict = {"Red": [], "Green": [], "Blue": [], "Alpha": []}
+        texture_analysis_dict = {
+            "Red": [],
+            "Green": [],
+            "Blue": [],
+            "Alpha": []}
 
         # check to prevent execution without entered output suffix
         if self.packed_texture_le.text():
 
-            # precautionary check to make sure that there is an entry in the RGB channels
+            # precautionary check to make sure that there is an
+            # entry in the RGB channels
             if self.r_channel_le.text() and self.g_channel_le.text() and \
-                self.b_channel_le.text():
+                    self.b_channel_le.text():
 
                 # use self.scandir_to_dict to walk across the root directory
                 # and output the values to a dictionary
@@ -514,34 +613,46 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
                 for entry in scandir_list:
 
                     texture_analysis_dict = self.analyze_textures_to_pack(
-                        str(entry['Directory']), entry['Files'], texture_analysis_dict)
+                        str(entry['Directory']),
+                        entry['Files'], texture_analysis_dict)
 
-                # if this key's list has values, run function to pack these textures
-                if texture_analysis_dict["Red"] and \
-                        texture_analysis_dict["Blue"] and texture_analysis_dict["Blue"]:
+                if texture_analysis_dict:
+                    # if this key's list has values, run function to
+                    # pack these textures
+                    if texture_analysis_dict["Red"] and \
+                        texture_analysis_dict["Blue"] and \
+                            texture_analysis_dict["Blue"]:
 
-                    # print str(texture_analysis_dict)
-                    self.pack_textures(texture_analysis_dict)
+                        # print str(texture_analysis_dict)
+                        self.pack_textures(texture_analysis_dict)
 
+                else:
+                    self.popup_ok_window('No textures were found to pack')
             else:
                 self.popup_ok_window('No Suffix Entred for all RGB Channels')
         else:
             self.popup_ok_window('No Suffix for Packed Texture')
 
-    def analyze_textures_to_pack(self, directory_path, dir_files, texture_dict):
-        """Analyze files within a directory and determine if the directory contains
-        the designate textures to pack.
-        Textures within the directory are iterated over and compared to the inputs
-        of the RGB QLineEdits and if there are matches, store those paths in another
-        dictionary to be used to pack the textures.
+    def analyze_textures_to_pack(
+            self, directory_path, dir_files, texture_dict):
+        """Analyze files within a directory and determine if the
+            directory contains the designate textures to pack.
+
+        Textures within the directory are iterated over and compared to the
+        inputs of the RGB QLineEdits and if there are matches, store those
+        paths in another dictionary to be used to pack the textures.
+
         Arguments:
-            directory_path {string} -- Input directory to analyze and parse through
+            directory_path {string} -- Input directory to analyze and
+                                        parse through
             dir_files {list} -- Input list of files to iterate through
-            texture_dict {dictionary} -- Dictionary used to store different scenarios
-                                            and return the results of the analysis
+            texture_dict {dictionary} -- Dictionary used to
+                                        store different scenarios and
+                                        return the results of the analysis
         Returns:
-            dictionary -- After found textures are analyzed, they are stored in the
-                            dictionary variable to be used later for texture packing
+            dictionary -- After found textures are analyzed, they are stored
+                            in the dictionary variable to be used
+                                later for texture packing
         """
 
         # variables used to store paths of textures that match desired suffixes
@@ -579,7 +690,8 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
                         print current_file
                         b_texture = current_file_path
 
-                # similarly to RGB checks, will only check if A QLineEdit is enabled
+                # similarly to RGB checks, will only check if a
+                # QLineEdit is enabled
                 if self.a_channel_le.isEnabled() and self.a_channel_le.text():
                     if str(self.a_channel_le.text()) in current_file:
                         if not a_texture:
@@ -615,6 +727,7 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
     def pack_textures(self, scandir_entry):
         """Logic used to control Photoshop and copy flattened textures
             into RGBA channels of a new texture.
+
         Arguments:
             scandir_entry {dictionary} -- input scandir generated dictionary to
                                         iterate over.
@@ -651,7 +764,8 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
             r_doc.selection.selectAll()
             r_doc.activeLayer.Copy()
 
-            # use height and width variables to create new texture with same dimentions
+            # use height and width variables to create new texture
+            # with same resolution
             blank_doc = ps_app.Documents.Add(
                 doc_width, doc_height, 72, 'new_document', 2, 1, 1)
 
@@ -695,12 +809,14 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
                 ps_app.activeDocument = blank_doc
                 blank_doc.channels.add()
                 # blank_doc.Name = 'Alpha 1'
-                # blank_doc.Kind = 2  # = PsChannelType.psMaskedAreaAlphaChannel
+                # blank_doc.Kind = 2
+                # = PsChannelType.psMaskedAreaAlphaChannel
                 blank_doc.Paste()
 
                 a_doc.Close(2)
 
-            # if there is an alpha input be sure to export TGA with alpha option on
+            # if there is an alpha input be sure to export TGA with
+            # alpha option on
             if scandir_entry['Alpha'][current_index]:
                 self.save_tga(ps_app, new_file_name_path, True)
             else:
@@ -715,12 +831,14 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
 
         progdialog.close()
 
-        # after using photoshop, prompt and ask user if they are done using photoshop
-        self.close_photoshop(ps_app)
+        # after using photoshop, prompt and ask user if they are done
+        # using photoshop
+        self.close_photoshop('Completed Texture Packing!', ps_app)
 
     def new_file_name(self, file_path, resize=False):
-        """Since assigning a new file name for both texture packing and texture
-        resizing follow similar operations, the functions were combined.
+        """Since assigning a new file name for both texture packing and
+        texture resizing follow similar operations, the functions were
+        combined.
 
         Arguments:
             file_path {str} -- full path of texture
@@ -744,12 +862,14 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
             # by splitting the extension, the new image size can be
             # appended to a new string and that is combined with the
             # extension
-            new_file_name = file_name + '_' + \
-                str(self.texture_size_combobox.currentText()) + file_extension
+            new_file_name = file_name + '_' + str(
+                self.target_texture_size_combobox.currentText()
+                ) + file_extension
 
             return new_file_name
         else:
-            # gets first element of split from '_' based on naming convention at BBA
+            # gets first element of split from '_' based on naming
+            # convention at BBA
             split_file_name = file_name.split('_')
 
             if len(split_file_name) > 1:
@@ -767,6 +887,7 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
 
     def check_windows_version(self):
         """Uses the platform package to determine the version of Windows.
+
         Returns:
             string -- Returns Windows OS version
         """
@@ -774,20 +895,21 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
         current_platform = platform.platform()
 
         if 'Windows' in current_platform:
-            #splits windows version based on dashes
+            # splits windows version based on dashes
             split_platform_name = current_platform.split('-')
-            #returns windows version number
+            # returns windows version number
             return split_platform_name[1]
         else:
             self.popup_ok_window('Untested OS. Tool only works on Windows')
 
     def check_photoshop_version(self):
         """Determine version of Photoshop installed.
+
         Returns:
             string -- Returns Photoshop version
         """
 
-        #default Photoshop install path
+        # default Photoshop install path
         if os.path.isdir('C:\\Program Files\\Adobe\\'):
 
             # get list of folders in default Photoshop install path
@@ -818,6 +940,7 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
                         # version 14
                         if ver_number == 'CC':
                             version = '70'
+
                         elif int(ver_number):
                             # version 15
                             if ver_number == '2014':
@@ -845,6 +968,7 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
 
                     if version:
                         return version
+
                     else:
                         self.popup_ok_window(
                             'Error getting installed Photoshop Version')
@@ -859,6 +983,7 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
 
     def launch_photoshop(self):
         """Function used to launch Photoshop.
+
         Creates a com object that is used to launch and control Photoshop.
         Currently the com object is set to dynamic, unsure what this entails
         but it has allowed the script to work with various Photoshop versions.
@@ -871,26 +996,33 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
         os_ver = self.check_windows_version()
 
         if os_ver == '10':
+
             ps_app = comtypes.client.CreateObject(
                 'Photoshop.Application', dynamic=True)
+
             ps_app.Visible = True
 
             # Set the default unit to pixels!
             ps_app.Preferences.RulerUnits = 1
 
             return ps_app
+
         else:
             self.popup_ok_window(
                 'Error with determining OS Version to launch Photoshop')
 
     def resize_results_popup(self, texture_dict):
         """Generates popup to show results of resize texture function.
-        Collects contents of resize texture dictionary, combines into a string, and
-        generates a popup witht his string.
+        Collects contents of resize texture dictionary, combines into a
+        string, and generates a popup witht his string.
+
         Arguments:
-            texture_dict {dictionary} -- Dictionary used to store different scenarios
-                                            and return the results of the analysis
-            target_size {int} -- Input texture sized that files will be sized to
+            texture_dict {dictionary} -- Dictionary used to store
+                                            different scenarios and return the
+                                            results of the analysis
+
+            target_size {int} -- Input texture sized that files
+                                    will be sized to
         """
 
         if texture_dict["Larger Textures"]:
@@ -903,14 +1035,16 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
         else:
             larger_textures_header = 'Resized Textures' + '\n'
             larger_textures = 'No Textures found larger than ' + \
-                str(self.texture_size_combobox.currentText()) + ' were found'
+                str(self.target_texture_size_combobox.currentText()) + \
+                ' were found'
 
         already_resized_textures_header = '\n\n' + \
             'Already ReSized and Skipped:' + '\n'
         already_resized_textures = '\n'.join(
             str(x) for x in texture_dict["Already Sized Textures"])
 
-        not_power_of_2_textures_header = '\n\n' + 'Not Power of 2 Textures' + '\n'
+        not_power_of_2_textures_header = '\n\n' + \
+            'Not Power of 2 Textures' + '\n'
         not_power_of_2_textures = '\n'.join(
             str(x) for x in texture_dict["Not Power of 2"])
 
@@ -929,9 +1063,11 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
     def save_as(self, ps_app, ps_doc, file_name):
         """Runs Save As Photoshop operation to save resized texture as a
             duplicate file.
+
         Similarly to com_object needed to launch and control Photoshop, a
-        com_object is needed. So a com_object is created to contain the appopriate
-        save options to save the file.
+        com_object is needed. So a com_object is created to contain the
+        appopriate save options to save the file.
+
         Arguments:
             ps_app {com_object} -- Gets current Photoshop instance
             ps_doc {com_object} -- The active photoshop document.
@@ -954,7 +1090,9 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
                     self.save_tga(ps_app, file_name, True)
                 else:
                     self.save_tga(ps_app, file_name)
+
             else:
+
                 if file_extension == '.jpg':
                     # creates com object for tga save operation
                     save_options = comtypes.client.CreateObject(
@@ -970,9 +1108,11 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
     def save_tga(self, ps_app, tga_file, alpha_channel=False):
         """Runs Save As Photoshop operation to save resized texture as a
             duplicate file.
+
         Similarly to com_object needed to launch and control Photoshop, a
         com_object is needed. So a com_object is created to contain the
         attributes to create a tga file.
+
         Arguments:
             ps_doc {com_object} -- The active photoshop document.
             tga_file {string} -- File name for the tga file to be generated.
@@ -995,6 +1135,7 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
 
             # If designated to include alpha, set parameters to do so
             if alpha_channel:
+
                 tga_save_options.Resolution = 32
                 tga_save_options.AlphaChannels = True
 
@@ -1003,12 +1144,14 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
 
     @classmethod
     def is_power2(cls, num):
-        """Performs calculation to determine if input
-        number is a power of 2.
+        """Performs calculation to determine if input number is a power of 2.
+
         Author: A.Polino
         https://code.activestate.com/recipes/577514-chek-if-a-number-is-a-power-of-two/
+
         Arguments:
             num {int} -- Input value to check
+
         Returns:
             boolean -- One line calculation and returns True or False
         """
@@ -1019,18 +1162,18 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
     @classmethod
     def popup_detailed_ok_window(cls, message):
         """Generic popup window with an OK button and displays message.
-        Generates QMessageBox with OK button.
-        Used for a detailed notification.
+        Generates QMessageBox with OK button. Used for a detailed notification.
+
         Arguments:
             message {string} -- string to be generated in detailed popup
         """
 
-        popup_window = QtGui.QMessageBox()  # pylint: disable = E1101
+        popup_window = QtGui.QMessageBox()
 
         popup_window.setText('Textures Found')
         popup_window.setDetailedText(str(message))
         popup_window.setStandardButtons(
-            QtGui.QMessageBox.Ok)  # pylint: disable = E1101
+            QtGui.QMessageBox.Ok)
 
         popup_window.exec_()
 
@@ -1038,27 +1181,27 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
     def popup_progress_window(cls, window_title, progress_length):
         """Popup QProgressDialog to display operation progress.
 
-        The progress_length parameter is the length of the input list or dictionary and
-        while looping through the list or dictionary, the index is used to show the current
-        progression.
+        The progress_length parameter is the length of the input list or
+        dictionary and while looping through the list or dictionary, the index
+        is used to show the current progression.
 
         Arguments:
             window_title {str} -- Input string name that will appear on the
-                QProgressDialog as the title of the dialog window
-            progress_length {int} -- Input integer that sets the size of the QProgressDialog
+                                    QProgressDialog as the title of the dialog
+                                    window
+            progress_length {int} -- Input integer that sets the size of the
+                                        QProgressDialog
 
         Returns:
-            QProgressDialog -- Returns the QProgressDialog so that it can be accessed elsewhere.
+            QProgressDialog -- Returns the QProgressDialog so that it can be
+                                accessed elsewhere.
         """
 
-        progdialog = QtGui.QProgressDialog(  # pylint: disable = E1101
-            "", "Cancel", 0, progress_length)
+        progdialog = QtGui.QProgressDialog("", "Cancel", 0, progress_length)
 
         progdialog.setWindowTitle(window_title)
-        # progdialog.setWindowModality(
-        #     QtCore.Qt.WindowModal)  # pylint: disable = E1101
-        progdialog.setWindowFlags(
-            QtCore.Qt.WindowStaysOnTopHint)  # pylint: disable = E1101
+        # progdialog.setWindowModality(QtCore.Qt.WindowModal)
+        progdialog.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
 
         progdialog.show()
 
@@ -1067,42 +1210,45 @@ class Main(QtGui.QMainWindow):  # pylint: disable = E1101
     @classmethod
     def popup_ok_window(cls, message):
         """Generic popup window with an OK button and displays message
-        Generates QMessageBox with OK button.
-        Used as a simple notification.
+        Generates QMessageBox with OK button. Used as a simple notification.
+
         Arguments:
             message {string} -- string to be generated in popup
         """
 
-        popup_window = QtGui.QMessageBox()  # pylint: disable = E1101
+        popup_window = QtGui.QMessageBox()
         popup_window.setText(str(message))
-        popup_window.setStandardButtons(
-            QtGui.QMessageBox.Ok)  # pylint: disable = E1101
+        popup_window.setStandardButtons(QtGui.QMessageBox.Ok)
 
         popup_window.exec_()
 
     @classmethod
-    def close_photoshop(cls, ps_app):
+    def close_photoshop(cls, message, ps_app):
         """Popup to ask user if they would want to close Photoshop
         Generates QMessageBox with yes and no buttons.
         If yes button is clicked close Photoshop
+
         Arguments:
             ps_app {com_object} -- Gets current Photoshop instance
         """
 
-        popup_window = QtGui.QMessageBox()  # pylint: disable = E1101
+        popup_window = QtGui.QMessageBox()
 
-        popup_window.setText('Close Photoshop?')
+        popup_message = message + '\n' + 'Close Photoshop?'
+
+        popup_window.setText(popup_message)
         popup_window.setStandardButtons(
-            QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)  # pylint: disable = E1101
-        popup_window.setWindowFlags(QtCore.Qt.Popup)  # pylint: disable = E1101
+            QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
+
+        popup_window.setWindowFlags(QtCore.Qt.Popup)
 
         result = popup_window.exec_()
 
-        if result == QtGui.QMessageBox.Yes:  # pylint: disable = E1101
+        if result == QtGui.QMessageBox.Yes:
             ps_app.Quit()
 
 if __name__ == '__main__':
-    app = QtGui.QApplication(sys.argv)  # pylint: disable = E1101
+    app = QtGui.QApplication(sys.argv)
     my_widget = Main()
     my_widget.show()
 sys.exit(app.exec_())
