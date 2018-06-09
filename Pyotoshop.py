@@ -1,4 +1,15 @@
-'''
+# Copyright (c) 2018 Doug Halley
+#
+# -*- coding:utf-8 -*-
+# @Script: Pyotoshop.py
+# @Author: Doug Halley
+# @Email: douglascomet@gmail.com
+# @Create At: 2018-02-16 22:05:50
+# @Last Modified By: Doug Halley
+# @Last Modified At: 2018-02-16 22:10:10
+# @Description: This is description.
+
+"""
 # =============================================================================
 # title           :Pyotoshop.py
 # description     :Automate Photoshop operations across several files
@@ -9,7 +20,7 @@
 # python_version  :2.7.14
 # pyqt_version    :4.11.4
 # =============================================================================
-'''
+"""
 
 import os
 import sys
@@ -19,8 +30,7 @@ import comtypes.client
 
 from PIL import Image
 
-from PyQt4 import QtGui
-from PyQt4 import QtCore
+from Qt import QtGui, QtCore, QtWidgets
 
 # Global Variables ------------------------------------------------------------
 EXTENSIONS = ('.tga', '.png', '.jpg')
@@ -28,27 +38,27 @@ TEXTURE_SIZES = (4096, 2048, 1024, 512, 256, 128, 64)
 
 
 class Main(QtGui.QMainWindow):
-    '''
+    """
     The class that contains, defines, and creates the UI.
-    '''
+    """
 
     def __init__(self, parent=None):
-        '''Initilizes the PyQt Interface.
+        """Initilizes the PyQt Interface.
 
         Keyword Arguments:
             parent {None} -- By having no parent, ui can be standalone
                                 (default: {None})
-        '''
+        """
 
         super(Main, self).__init__(parent)
         self.create_ui()
 
     def create_ui(self):
-        '''Creates the PyQt Interface.
+        """Creates the PyQt Interface.
 
         All the PyQt logic needed is contained in this function,
         including the PyQt elements and connect functions.
-        '''
+        """
 
         # =====================================================================
         # PYQT Widget Defintions
@@ -97,7 +107,7 @@ class Main(QtGui.QMainWindow):
         texture_resize_description_lbl.setWordWrap(True)
 
         # layout for combobox that contains varying texture sizes
-        # child of target_texture_size_combobox_layout ------------------------
+        # child of target_size_combobox_layout ------------------------
         target_texture_size_formlayout = QtGui.QFormLayout()
         target_texture_size_formlayout.setRowWrapPolicy(
             QtGui.QFormLayout.DontWrapRows)
@@ -107,11 +117,11 @@ class Main(QtGui.QMainWindow):
         target_texture_size_formlayout.setFormAlignment(QtCore.Qt.AlignVCenter)
 
         # Resize texture button layout, child of texture_resizer_widget -------
-        target_texture_size_combobox_layout = QtGui.QHBoxLayout()
+        target_size_combobox_layout = QtGui.QHBoxLayout()
 
         # Spacer used to place add_directory_btn in the center of the ui
-        target_texture_size_combobox_l_spacer = QtGui.QSpacerItem(30, 50)
-        target_texture_size_combobox_r_spacer = QtGui.QSpacerItem(10, 50)
+        target_size_combobox_l_spacer = QtGui.QSpacerItem(30, 50)
+        target_size_combobox_r_spacer = QtGui.QSpacerItem(10, 50)
 
         # creates combobox for texture sizes
         self.target_texture_size_combobox = QtGui.QComboBox()
@@ -266,24 +276,17 @@ class Main(QtGui.QMainWindow):
             self.target_texture_size_combobox)
 
         # Assigments for texture resizer QFormLayout with spacers -------------
-        target_texture_size_combobox_layout.addItem(
-            target_texture_size_combobox_l_spacer)
-
-        target_texture_size_combobox_layout.addLayout(
-            target_texture_size_formlayout)
-
-        target_texture_size_combobox_layout.addItem(
-            target_texture_size_combobox_r_spacer)
+        target_size_combobox_layout.addItem(target_size_combobox_l_spacer)
+        target_size_combobox_layout.addLayout(target_texture_size_formlayout)
+        target_size_combobox_layout.addItem(target_size_combobox_r_spacer)
 
         # Assigments for texture resize button layout -------------------------
         texture_resize_btn_layout.addItem(resize_pack_btn_spacer)
         texture_resize_btn_layout.addWidget(resize_textures_btn)
 
         # Assigments for texture packer parent widget -------------------------
-        texture_resizer_widget.layout().addWidget(
-            texture_resize_description_lbl)
-        texture_resizer_widget.layout().addLayout(
-            target_texture_size_combobox_layout)
+        texture_resizer_widget.layout().addWidget(texture_resize_description_lbl)
+        texture_resizer_widget.layout().addLayout(target_size_combobox_layout)
         texture_resizer_widget.layout().addLayout(texture_resize_btn_layout)
 
         # adds directiory widget and tab widgets to central widget ------------
@@ -315,10 +318,10 @@ class Main(QtGui.QMainWindow):
 
     @classmethod
     def get_directory(cls, directory_lbl, tab_widget):
-        '''Create popup file browser and stores path.
+        """Create popup file browser and stores path.
 
         Creates QFileDialog to find and store designated folder
-        '''
+        """
 
         dlg = QtGui.QFileDialog.getExistingDirectory(
             None, 'Select a folder:', 'C:\\Users\\desktop',
@@ -335,7 +338,7 @@ class Main(QtGui.QMainWindow):
 
     @classmethod
     def toggle_alpha_input(cls, checkbox, line_edit, label_text):
-        '''Toggles alpha channel QLineEdit usablity.
+        """Toggles alpha channel QLineEdit usablity.
 
         Checks if input checkbox is checked and determines if
         a_channel_le is enabled or disabled
@@ -347,7 +350,7 @@ class Main(QtGui.QMainWindow):
                 based on checkbox parameter
             label_text {QLabel} -- text displays differently
                 based on checkbox parameter
-        '''
+        """
 
         if checkbox.isChecked():
             line_edit.setEnabled(True)
@@ -358,7 +361,7 @@ class Main(QtGui.QMainWindow):
 
     @classmethod
     def scandir_to_dict(cls, path):
-        '''Use scandir walk function to parse directories.
+        """Use scandir walk function to parse directories.
 
         The scandir package was developed by Ben Hoyt and
         incorporated into Python 3.5.
@@ -394,7 +397,7 @@ class Main(QtGui.QMainWindow):
 
         Returns:
             dictionary -- dicionary containing the results of scandir.walk
-        '''
+        """
 
         # list of dictionaries
         scandir_entries = []
@@ -411,13 +414,13 @@ class Main(QtGui.QMainWindow):
         return scandir_entries
 
     def parse_texture_to_resize(self, path):
-        '''Parse through root directory and determine which actions to take.
+        """Parse through root directory and determine which actions to take.
         Parses input root and uses self.scandir_to_dict to get the directory,
         all subfolders and files into a dictionary format.
 
         Arguments:
             path {string} -- path to analyze
-        '''
+        """
 
         # dictionary used to collect images larger than target_size
         texture_analysis_dict = {
@@ -430,13 +433,29 @@ class Main(QtGui.QMainWindow):
         # and output the values to a dictionary
         scandir_list = self.scandir_to_dict(path)
 
+        progress_dialog = self.popup_progress_window(
+            'Finding Textures to Resize', len(scandir_list))
+
         # iterate across list of dictionary that contains the
         # root directory, subfolders, and files
-        for entry in scandir_list:
+        for index, entry in enumerate(scandir_list):
+
+            if progress_dialog.wasCanceled():
+                texture_analysis_dict.clear()
+                break
 
             # print str(entry)
             texture_analysis_dict = self.analyze_textures_to_resize(
                 str(entry['Directory']), entry['Files'], texture_analysis_dict)
+
+            progress_dialog.setValue(index)
+
+            progress_dialog.setLabelText(
+                'Searching for Textures in {0}...'.format(str(entry['Directory'])))
+
+        progress_dialog.setValue(len(scandir_list))
+
+        progress_dialog.close()
 
         print texture_analysis_dict['Larger Textures']
         # if this key's list has values, run function to resize these textures
@@ -458,9 +477,8 @@ class Main(QtGui.QMainWindow):
         texture_analysis_dict['Not Power of 2'] = []
         texture_analysis_dict['Not Square'] = []
 
-    def analyze_textures_to_resize(
-            self, directory_path, dir_files, texture_dict):
-        '''Parse directories to find textures and resize them.
+    def analyze_textures_to_resize(self, directory_path, dir_files, texture_dict):
+        """Parse directories to find textures and resize them.
         This function does a preliminary scan of the directory
         given by the user.
         If texture files are found they are analyzed and their
@@ -481,7 +499,7 @@ class Main(QtGui.QMainWindow):
         Returns:
             dictionary -- After found textures are analyzed,
                 they are stored in the dictionary variable to be used later
-        '''
+        """
 
         # iterate over scandir_entries in found subdirectory
         for current_file in dir_files:
@@ -494,8 +512,7 @@ class Main(QtGui.QMainWindow):
                 # s variable used to iterate over TEXTURE_SIZES tuple
                 # x current element being processed in directory
                 if any(str(s) in current_file for s in TEXTURE_SIZES):
-                    texture_dict['Already Sized Textures'].append(
-                        current_file)
+                    texture_dict['Already Sized Textures'].append(current_file)
                 else:
                     # use PIL package to create Image object
                     with Image.open(current_file_path) as image:
@@ -529,20 +546,23 @@ class Main(QtGui.QMainWindow):
         return texture_dict
 
     def texture_resize(self, list_to_resize):
-        '''Resize and export process textures.
+        """Resize and export process textures.
         Logic to control Photoshop, resize textures, and save as a new texture
         and include the new size in the file name
 
         Arguments:
             list_to_resize {list} -- List of textures designated to be resized
-        '''
+        """
 
         ps_app = self.launch_photoshop()
 
-        progress_dialog = self.popup_progress_window(
-            'Resizing Textures', len(list_to_resize))
+        progress_dialog = self.popup_progress_window('Resizing Textures', len(list_to_resize))
 
         for texture_path in list_to_resize:
+
+            if progress_dialog.wasCanceled():
+                self.popup_ok_window('Search Canceled')
+                break
 
             path_name = os.path.dirname(os.path.abspath(texture_path))
 
@@ -553,14 +573,13 @@ class Main(QtGui.QMainWindow):
 
             progress_dialog.setValue(current_index)
 
-            progress_dialog.setLabelText('Resizing Textures in %s...' % path_name)
+            progress_dialog.setLabelText('Resizing Textures in {0}...'.format(path_name))
 
             # incase Photoshop was already open, make current
             # document the active document
             ps_app.Application.ActiveDocument  # pylint: disable = W0104
 
-            target_resolution = \
-                int(self.target_texture_size_combobox.currentText())
+            target_resolution = int(self.target_texture_size_combobox.currentText())
 
             # call the Photoshop resize operation
             current_ps_doc.resizeImage(target_resolution, target_resolution)
@@ -573,9 +592,6 @@ class Main(QtGui.QMainWindow):
             # close original version without saving
             current_ps_doc.Close(2)
 
-            if progress_dialog.wasCanceled():
-                break
-
         progress_dialog.setValue(len(list_to_resize))
 
         progress_dialog.close()
@@ -584,12 +600,12 @@ class Main(QtGui.QMainWindow):
         self.close_photoshop('Completed Texture Resizing!', ps_app)
 
     def parse_texture_dirs_to_pack(self, path):
-        '''Parse through root directory and determine which actions to take.
+        """Parse through root directory and determine which actions to take.
         Parses input root and uses self.scandir_to_dict to get the directory,
         all subfolders and files into a dictionary format.
         Arguments:
             path {string} -- path to analyze
-        '''
+        """
 
         texture_analysis_dict = {
             'Red': [],
@@ -609,13 +625,31 @@ class Main(QtGui.QMainWindow):
                 # and output the values to a dictionary
                 scandir_list = self.scandir_to_dict(path)
 
+                progress_dialog = self.popup_progress_window(
+                    'Finding Textures to Pack', len(scandir_list))
+
                 # iterate across list of dictionary that contains the
                 # root directory, subfolders, and files
-                for entry in scandir_list:
+                for index, entry in enumerate(scandir_list):
+
+                    if progress_dialog.wasCanceled():
+                        texture_analysis_dict.clear()
+                        self.popup_ok_window('Search Canceled')
+                        break
 
                     texture_analysis_dict = self.analyze_textures_to_pack(
-                        str(entry['Directory']),
-                        entry['Files'], texture_analysis_dict)
+                        str(entry['Directory']), entry['Files'],
+                        texture_analysis_dict)
+
+                    progress_dialog.setValue(index)
+
+                    progress_dialog.setLabelText(
+                        'Searching for Textures in {0}...'.format(
+                            str(entry['Directory'])))
+
+                progress_dialog.setValue(len(scandir_list))
+
+                progress_dialog.close()
 
                 if texture_analysis_dict:
                     # if this key's list has values, run function to
@@ -634,9 +668,8 @@ class Main(QtGui.QMainWindow):
         else:
             self.popup_ok_window('No Suffix for Packed Texture')
 
-    def analyze_textures_to_pack(
-            self, directory_path, dir_files, texture_dict):
-        '''Analyze files within a directory and determine if the
+    def analyze_textures_to_pack(self, directory_path, dir_files, texture_dict):
+        """Analyze files within a directory and determine if the
             directory contains the designate textures to pack.
 
         Textures within the directory are iterated over and compared to the
@@ -654,7 +687,7 @@ class Main(QtGui.QMainWindow):
             dictionary -- After found textures are analyzed, they are stored
                             in the dictionary variable to be used
                                 later for texture packing
-        '''
+        """
 
         # variables used to store paths of textures that match desired suffixes
         # variables are initilized to empty strings
@@ -726,13 +759,13 @@ class Main(QtGui.QMainWindow):
         return texture_dict
 
     def pack_textures(self, scandir_entry):
-        '''Logic used to control Photoshop and copy flattened textures
+        """Logic used to control Photoshop and copy flattened textures
             into RGBA channels of a new texture.
 
         Arguments:
             scandir_entry {dictionary} -- input scandir generated dictionary to
                                         iterate over.
-        '''
+        """
 
         # open Photoshop
         ps_app = self.launch_photoshop()
@@ -746,15 +779,21 @@ class Main(QtGui.QMainWindow):
         # and the index number just needs to be matched for each other channel
         for current_file in scandir_entry['Red']:
 
+            if progress_dialog.wasCanceled():
+                self.popup_ok_window('Search Canceled')
+                break
+
             new_file_name_path = self.new_file_name(current_file)
 
             current_index = scandir_entry['Red'].index(current_file)
 
             progress_dialog.setValue(current_index)
 
-            progress_dialog.setLabelText('Packing %s...' % new_file_name_path)
+            progress_dialog.setLabelText(
+                'Packing {0}...'.format(new_file_name_path))
 
-            # open texture matching designated suffix to be used for R Channel
+            # open texture matching designated suffix to be used
+            # for R Channel
             r_doc = ps_app.Open(scandir_entry['Red'][current_index])
 
             # get width and height of texture
@@ -770,7 +809,8 @@ class Main(QtGui.QMainWindow):
             blank_doc = ps_app.Documents.Add(
                 doc_width, doc_height, 72, 'new_document', 2, 1, 1)
 
-            # blank_doc.channels['Red'] - equivalent to calling channel by name
+            # blank_doc.channels['Red'] - equivalent to calling channel
+            # by name
             # activeChannels must receive an array
             blank_doc.activeChannels = [blank_doc.channels['Red']]
             blank_doc.Paste()
@@ -825,9 +865,6 @@ class Main(QtGui.QMainWindow):
 
             blank_doc.Close(2)
 
-            if progress_dialog.wasCanceled():
-                break
-
         progress_dialog.setValue(len(scandir_entry['Red']))
 
         progress_dialog.close()
@@ -837,7 +874,7 @@ class Main(QtGui.QMainWindow):
         self.close_photoshop('Completed Texture Packing!', ps_app)
 
     def new_file_name(self, file_path, resize=False):
-        '''Since assigning a new file name for both texture packing and
+        """Since assigning a new file name for both texture packing and
         texture resizing follow similar operations, the functions were
         combined.
 
@@ -850,7 +887,7 @@ class Main(QtGui.QMainWindow):
 
         Returns:
             str -- Returns updated path name
-        '''
+        """
 
         split_path, split_path_file_name = os.path.split(file_path)
 
@@ -887,11 +924,11 @@ class Main(QtGui.QMainWindow):
             return new_file_name_path
 
     def check_windows_version(self):
-        '''Uses the platform package to determine the version of Windows.
+        """Uses the platform package to determine the version of Windows.
 
         Returns:
             string -- Returns Windows OS version
-        '''
+        """
 
         current_platform = platform.platform()
 
@@ -904,11 +941,11 @@ class Main(QtGui.QMainWindow):
             self.popup_ok_window('Untested OS. Tool only works on Windows')
 
     def check_photoshop_version(self):
-        '''Determine version of Photoshop installed.
+        """Determine version of Photoshop installed.
 
         Returns:
             string -- Returns Photoshop version
-        '''
+        """
 
         # default Photoshop install path
         if os.path.isdir('C:\\Program Files\\Adobe\\'):
@@ -983,7 +1020,7 @@ class Main(QtGui.QMainWindow):
                 'Adobe Software not installed in default directory')
 
     def launch_photoshop(self):
-        '''Function used to launch Photoshop.
+        """Function used to launch Photoshop.
 
         Creates a com object that is used to launch and control Photoshop.
         Currently the com object is set to dynamic, unsure what this entails
@@ -992,7 +1029,7 @@ class Main(QtGui.QMainWindow):
 
         Returns:
             com_object -- Returns instance of Photoshop object.
-        '''
+        """
 
         os_ver = self.check_windows_version()
 
@@ -1013,7 +1050,7 @@ class Main(QtGui.QMainWindow):
                 'Error with determining OS Version to launch Photoshop')
 
     def resize_results_popup(self, texture_dict):
-        '''Generates popup to show results of resize texture function.
+        """Generates popup to show results of resize texture function.
         Collects contents of resize texture dictionary, combines into a
         string, and generates a popup witht his string.
 
@@ -1024,7 +1061,7 @@ class Main(QtGui.QMainWindow):
 
             target_size {int} -- Input texture sized that files
                                     will be sized to
-        '''
+        """
 
         if texture_dict['Larger Textures']:
 
@@ -1062,7 +1099,7 @@ class Main(QtGui.QMainWindow):
         self.popup_ok_window(output_string)
 
     def save_as(self, ps_app, ps_doc, file_name):
-        '''Runs Save As Photoshop operation to save resized texture as a
+        """Runs Save As Photoshop operation to save resized texture as a
             duplicate file.
 
         Similarly to com_object needed to launch and control Photoshop, a
@@ -1073,7 +1110,7 @@ class Main(QtGui.QMainWindow):
             ps_app {com_object} -- Gets current Photoshop instance
             ps_doc {com_object} -- The active photoshop document.
             file_name {string} -- File name for the tga file to be generated.
-        '''
+        """
 
         os_ver = self.check_windows_version()
 
@@ -1107,7 +1144,7 @@ class Main(QtGui.QMainWindow):
                 ps_app.ActiveDocument.SaveAs(file_name, save_options, True)
 
     def save_tga(self, ps_app, tga_file, alpha_channel=False):
-        '''Runs Save As Photoshop operation to save resized texture as a
+        """Runs Save As Photoshop operation to save resized texture as a
             duplicate file.
 
         Similarly to com_object needed to launch and control Photoshop, a
@@ -1120,7 +1157,7 @@ class Main(QtGui.QMainWindow):
         Keyword Arguments:
             alpha_channel {bool} -- Determines if alpha channel is included in
                                     save (default: {False})
-        '''
+        """
 
         os_ver = self.check_windows_version()
 
@@ -1145,7 +1182,7 @@ class Main(QtGui.QMainWindow):
 
     @classmethod
     def is_power2(cls, num):
-        '''Performs calculation to determine if input number is a power of 2.
+        """Performs calculation to determine if input number is a power of 2.
 
         Author: A.Polino
         https://code.activestate.com/recipes/577514-chek-if-a-number-is-a-power-of-two/
@@ -1155,19 +1192,19 @@ class Main(QtGui.QMainWindow):
 
         Returns:
             boolean -- One line calculation and returns True or False
-        '''
+        """
 
         # states if a number is a power of two
         return num != 0 and ((num & (num - 1)) == 0)
 
     @classmethod
     def popup_detailed_ok_window(cls, message):
-        '''Generic popup window with an OK button and displays message.
+        """Generic popup window with an OK button and displays message.
         Generates QMessageBox with OK button. Used for a detailed notification.
 
         Arguments:
             message {string} -- string to be generated in detailed popup
-        '''
+        """
 
         popup_window = QtGui.QMessageBox()
 
@@ -1180,7 +1217,7 @@ class Main(QtGui.QMainWindow):
 
     @classmethod
     def popup_progress_window(cls, window_title, progress_length):
-        '''Popup QProgressDialog to display operation progress.
+        """Popup QProgressDialog to display operation progress.
 
         The progress_length parameter is the length of the input list or
         dictionary and while looping through the list or dictionary, the index
@@ -1196,7 +1233,7 @@ class Main(QtGui.QMainWindow):
         Returns:
             QProgressDialog -- Returns the QProgressDialog so that it can be
                                 accessed elsewhere.
-        '''
+        """
 
         # Creates the QProgressDialog Window
         progress_dialog = QtGui.QProgressDialog(
@@ -1215,12 +1252,12 @@ class Main(QtGui.QMainWindow):
 
     @classmethod
     def popup_ok_window(cls, message):
-        '''Generic popup window with an OK button and displays message
+        """Generic popup window with an OK button and displays message
         Generates QMessageBox with OK button. Used as a simple notification.
 
         Arguments:
             message {string} -- string to be generated in popup
-        '''
+        """
 
         popup_window = QtGui.QMessageBox()
         popup_window.setText(str(message))
@@ -1230,13 +1267,13 @@ class Main(QtGui.QMainWindow):
 
     @classmethod
     def close_photoshop(cls, message, ps_app):
-        '''Popup to ask user if they would want to close Photoshop
+        """Popup to ask user if they would want to close Photoshop
         Generates QMessageBox with yes and no buttons.
         If yes button is clicked close Photoshop
 
         Arguments:
             ps_app {com_object} -- Gets current Photoshop instance
-        '''
+        """
 
         popup_window = QtGui.QMessageBox()
 
