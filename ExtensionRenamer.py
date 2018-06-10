@@ -1,5 +1,8 @@
-def preprocess_textures(self, path):
-    '''Analyzes textures in folder to determine if their extension is correct'''
+import os
+from Qt import QtWidgets
+
+def preprocess_textures(path):
+    """Analyzes textures in folder to determine if their extension is correct"""
     count = 0
 
     if os.path.isdir(path):
@@ -24,14 +27,14 @@ def preprocess_textures(self, path):
                         [dirpath, file_name])
                     count += 1
         if count == 0:
-            self.popup_ok_window(
-                'There were not any files that needed their extensions formatted')
+            title = 'No Files Found'
+            message = 'There were not any files that needed their extensions formatted'
+            QtWidgets.QMesssageBox(title, message)
         else:
-            self.popup_ok_window(
-                str(count) + 'Files had their extenstions changed to .tga')
-        # for x, y in list_of_files.iteritems():
-        #     print 'File Name: ', x
-        #     print 'File Path: ', y
-
+            title = 'Completed File Renaming'
+            message = str(count) + 'Files had their extenstions changed to .tga'
     else:
-        self.popup_ok_window('Invalid Path')
+        title = 'Cannot Proceed'
+        message = 'Invalid Path Provided'
+
+    QtWidgets.QMesssageBox(title, message)

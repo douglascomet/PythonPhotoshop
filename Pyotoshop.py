@@ -46,7 +46,7 @@ class Main(QtGui.QMainWindow):
         """Initilizes the PyQt Interface.
 
         Keyword Arguments:
-            parent {None} -- By having no parent, ui can be standalone
+            parent (None): By having no parent, ui can be standalone
                                 (default: {None})
         """
 
@@ -163,8 +163,7 @@ class Main(QtGui.QMainWindow):
         texture_pack_description_lbl.setAlignment(QtCore.Qt.AlignCenter)
         texture_pack_description_lbl.setWordWrap(True)
 
-        channel_inputs_lbl = QtGui.QLabel(
-            '- Enter Suffixes of Texture Files to Search for -')
+        channel_inputs_lbl = QtGui.QLabel('- Enter Suffixes of Texture Files to Search for -')
         channel_inputs_lbl.setAlignment(QtCore.Qt.AlignCenter)
 
         self.r_channel_le = QtGui.QLineEdit('')
@@ -200,8 +199,7 @@ class Main(QtGui.QMainWindow):
         self.b_channel_le.setFixedWidth(110)
         self.a_channel_le.setFixedWidth(110)
 
-        output_format_lbl = \
-            QtGui.QLabel('- Packed Texture Format - 24 bit .tga -')
+        output_format_lbl = QtGui.QLabel('- Packed Texture Format - 24 bit .tga -')
         output_format_lbl.setAlignment(QtCore.Qt.AlignCenter)
 
         self.packed_texture_le = QtGui.QLineEdit('')
@@ -242,18 +240,12 @@ class Main(QtGui.QMainWindow):
         # Assigments for input_channel_formlayout -----------------------------
 
         input_channel_formlayout.addRow(channel_inputs_lbl)
-        input_channel_formlayout.addRow(
-            QtGui.QLabel('R Channel'), self.r_channel_le)
-        input_channel_formlayout.addRow(
-            QtGui.QLabel('G Channel'), self.g_channel_le)
-        input_channel_formlayout.addRow(
-            QtGui.QLabel('B Channel'), self.b_channel_le)
-        input_channel_formlayout.addRow(self.a_channel_checkbox,
-                                        self.a_channel_le)
+        input_channel_formlayout.addRow(QtGui.QLabel('R Channel'), self.r_channel_le)
+        input_channel_formlayout.addRow(QtGui.QLabel('G Channel'), self.g_channel_le)
+        input_channel_formlayout.addRow(QtGui.QLabel('B Channel'), self.b_channel_le)
+        input_channel_formlayout.addRow(self.a_channel_checkbox, self.a_channel_le)
         input_channel_formlayout.addRow(output_format_lbl)
-        input_channel_formlayout.addRow(
-            QtGui.QLabel('Packed Texture'), self.packed_texture_le)
-
+        input_channel_formlayout.addRow(QtGui.QLabel('Packed Texture'), self.packed_texture_le)
         input_channel_formlayout.addRow(texture_pack_btn_layout)
 
         # Assigments for texture_packer_widget --------------------------------
@@ -266,8 +258,7 @@ class Main(QtGui.QMainWindow):
         texture_tools_tab_widget.setLayout(QtGui.QHBoxLayout())
 
         texture_tools_tab_widget.addTab(texture_packer_widget, 'Pack Textures')
-        texture_tools_tab_widget.addTab(texture_resizer_widget,
-                                        'Resize Textures')
+        texture_tools_tab_widget.addTab(texture_resizer_widget, 'Resize Textures')
         texture_tools_tab_widget.setEnabled(False)
 
         # Assigments for target_texture_size_formlayout -----------------------
@@ -340,15 +331,14 @@ class Main(QtGui.QMainWindow):
     def toggle_alpha_input(cls, checkbox, line_edit, label_text):
         """Toggles alpha channel QLineEdit usablity.
 
-        Checks if input checkbox is checked and determines if
-        a_channel_le is enabled or disabled
+        Checks if input checkbox is checked and determines if a line edit is enabled or disabled
 
         Arguments:
-            checkbox {QCheckBox} -- If checkbox is checked
+            checkbox (QCheckBox): If checkbox is checked
                 set parameters of other Q-Objects
-            line_edit {QLineEdit} -- enabled or disabled
+            line_edit (QLineEdit): enabled or disabled
                 based on checkbox parameter
-            label_text {QLabel} -- text displays differently
+            label_text (QLabel): text displays differently
                 based on checkbox parameter
         """
 
@@ -361,39 +351,15 @@ class Main(QtGui.QMainWindow):
 
     @classmethod
     def scandir_to_dict(cls, path):
-        """Use scandir walk function to parse directories.
+        """Converts the tuples created from scandir walk to dictionaries.
 
-        The scandir package was developed by Ben Hoyt and
-        incorporated into Python 3.5.
-        He wrote a blogpost about it here:
-        http://benhoyt.com/writings/scandir/
-
-        When developing with os.walk I noticed that there are extra
-        iterations happening.
-        They are not apparent because the conditional statements I
-        set up only show what
-        I want to see. Inherently, to my understanding, os.walk will
-        iterate across each
-        directory and each file in each directory.
-
-        By contrast scandir makes a tuple for each directory.
         Tuple Indexes:
             [0] {string}- directory path
             [1] {list} - list of sub directories
             [2] {list} - list of files in the directory path
 
-        I referred to these links to understand how to use scandir:
-        https://www.blog.pythonlibrary.org/2016/01/26/python-101-how-to-traverse-a-directory/
-        https://www.python.org/dev/peps/pep-0471/#os-scandir
-
-        This format makes the results of scandir.walk easy to work with.
-        I planned to send the results of scandir.walk into other functions
-        and rather than remembering which index to work with, I decided to
-        make a dictionary with easily indentifiable keys to make reading
-        back my code easier.
-
         Arguments:
-            path {string} -- root directory folder
+            path (string): root directory folder
 
         Returns:
             dictionary -- dicionary containing the results of scandir.walk
@@ -404,7 +370,7 @@ class Main(QtGui.QMainWindow):
 
         # walk through directory, sub directories, and files
         for entry in scandir.walk(path):
-            temp = {'Directory': '', 'Sub_Dirs': [], 'Files': []}
+            temp = {}
             temp['Directory'] = entry[0]
             temp['Sub_Dirs'] = entry[1]
             temp['Files'] = entry[2]
@@ -419,7 +385,7 @@ class Main(QtGui.QMainWindow):
         all subfolders and files into a dictionary format.
 
         Arguments:
-            path {string} -- path to analyze
+            path (string): path to analyze
         """
 
         # dictionary used to collect images larger than target_size
@@ -490,10 +456,10 @@ class Main(QtGui.QMainWindow):
         they have been scaled to.
 
         Arguments:
-            directory_path {string} -- Input directory to analyze and
+            directory_path (string): Input directory to analyze and
                 parse through
-            dir_files {list} -- Input list of files to iterate through
-            texture_dict {dictionary} -- Dictionary used to store
+            dir_files (list): Input list of files to iterate through
+            texture_dict (dictionary): Dictionary used to store
                 different scenarios and return the results of the analysis
 
         Returns:
@@ -530,14 +496,11 @@ class Main(QtGui.QMainWindow):
                             # count_tileable = count_tileable + 1
 
                             if int(size_of_image[0]) > int(
-                                    self.target_texture_size_combobox
-                                    .currentText()):
+                                    self.target_texture_size_combobox.currentText()):
                                 # testPrint = testPrint + imagePath + '\n'
-                                texture_dict['Larger Textures'].append(
-                                    current_file_path)
+                                texture_dict['Larger Textures'].append(current_file_path)
                             else:
-                                print current_file_path + ' - ' + \
-                                    '{0}'.format(size_of_image)
+                                print current_file_path + ' - ' + '{0}'.format(size_of_image)
                         else:
                             texture_dict['Not Power of 2'].append(current_file)
                     else:
@@ -551,7 +514,7 @@ class Main(QtGui.QMainWindow):
         and include the new size in the file name
 
         Arguments:
-            list_to_resize {list} -- List of textures designated to be resized
+            list_to_resize (list): List of textures designated to be resized
         """
 
         ps_app = self.launch_photoshop()
@@ -603,8 +566,9 @@ class Main(QtGui.QMainWindow):
         """Parse through root directory and determine which actions to take.
         Parses input root and uses self.scandir_to_dict to get the directory,
         all subfolders and files into a dictionary format.
+
         Arguments:
-            path {string} -- path to analyze
+            path (string): path to analyze
         """
 
         texture_analysis_dict = {
@@ -677,10 +641,10 @@ class Main(QtGui.QMainWindow):
         paths in another dictionary to be used to pack the textures.
 
         Arguments:
-            directory_path {string} -- Input directory to analyze and
+            directory_path (string): Input directory to analyze and
                                         parse through
-            dir_files {list} -- Input list of files to iterate through
-            texture_dict {dictionary} -- Dictionary used to
+            dir_files (list): Input list of files to iterate through
+            texture_dict (dictionary): Dictionary used to
                                         store different scenarios and
                                         return the results of the analysis
         Returns:
@@ -763,7 +727,7 @@ class Main(QtGui.QMainWindow):
             into RGBA channels of a new texture.
 
         Arguments:
-            scandir_entry {dictionary} -- input scandir generated dictionary to
+            scandir_entry (dictionary): input scandir generated dictionary to
                                         iterate over.
         """
 
@@ -879,10 +843,10 @@ class Main(QtGui.QMainWindow):
         combined.
 
         Arguments:
-            file_path {str} -- full path of texture
+            file_path (str): full path of texture
 
         Keyword Arguments:
-            resize {bool} -- Toggle to be able switch between
+            resize (bool): Toggle to be able switch between
             texture packing or texture resizing (default: {False})
 
         Returns:
@@ -1055,12 +1019,10 @@ class Main(QtGui.QMainWindow):
         string, and generates a popup witht his string.
 
         Arguments:
-            texture_dict {dictionary} -- Dictionary used to store
-                                            different scenarios and return the
-                                            results of the analysis
+            texture_dict (dictionary): Dictionary used to store different scenarios and return the
+                                       results of the analysis
 
-            target_size {int} -- Input texture sized that files
-                                    will be sized to
+            target_size (int): Input texture sized that files will be sized to
         """
 
         if texture_dict['Larger Textures']:
@@ -1068,27 +1030,21 @@ class Main(QtGui.QMainWindow):
             self.texture_resize(texture_dict['Larger Textures'])
 
             larger_textures_header = 'Resized Textures:' + '\n'
-            larger_textures = '\n'.join(
-                str(x) for x in texture_dict['Larger Textures'])
+            larger_textures = '\n'.join(str(x) for x in texture_dict['Larger Textures'])
         else:
             larger_textures_header = 'Resized Textures' + '\n'
             larger_textures = 'No Textures found larger than ' + \
                 str(self.target_texture_size_combobox.currentText()) + \
                 ' were found'
 
-        already_resized_textures_header = '\n\n' + \
-            'Already ReSized and Skipped:' + '\n'
-        already_resized_textures = '\n'.join(
-            str(x) for x in texture_dict['Already Sized Textures'])
+        already_resized_textures_header = '\n\n' + 'Already ReSized and Skipped:' + '\n'
+        already_resized_textures = '\n'.join(str(x) for x in texture_dict['Already Sized Textures'])
 
-        not_power_of_2_textures_header = '\n\n' + \
-            'Not Power of 2 Textures' + '\n'
-        not_power_of_2_textures = '\n'.join(
-            str(x) for x in texture_dict['Not Power of 2'])
+        not_power_of_2_textures_header = '\n\n' + 'Not Power of 2 Textures' + '\n'
+        not_power_of_2_textures = '\n'.join(str(x) for x in texture_dict['Not Power of 2'])
 
         not_square_texture_header = '\n\n' + 'Not Square Textures' + '\n'
-        not_square_textures = '\n'.join(
-            str(x) for x in texture_dict['Not Square'])
+        not_square_textures = '\n'.join(str(x) for x in texture_dict['Not Square'])
 
         output_string = larger_textures_header + \
             larger_textures + already_resized_textures_header + \
@@ -1107,9 +1063,9 @@ class Main(QtGui.QMainWindow):
         appopriate save options to save the file.
 
         Arguments:
-            ps_app {com_object} -- Gets current Photoshop instance
-            ps_doc {com_object} -- The active photoshop document.
-            file_name {string} -- File name for the tga file to be generated.
+            ps_app (com_object): Gets current Photoshop instance
+            ps_doc (com_object): The active photoshop document.
+            file_name (string): File name for the tga file to be generated.
         """
 
         os_ver = self.check_windows_version()
@@ -1144,19 +1100,17 @@ class Main(QtGui.QMainWindow):
                 ps_app.ActiveDocument.SaveAs(file_name, save_options, True)
 
     def save_tga(self, ps_app, tga_file, alpha_channel=False):
-        """Runs Save As Photoshop operation to save resized texture as a
-            duplicate file.
+        """Runs Save As Photoshop operation to save resized texture as a duplicate file.
 
-        Similarly to com_object needed to launch and control Photoshop, a
-        com_object is needed. So a com_object is created to contain the
-        attributes to create a tga file.
+        Similarly to com_object needed to launch and control Photoshop, a com_object is needed.
+        So a com_object is created to contain the attributes to create a tga file.
 
         Arguments:
-            ps_doc {com_object} -- The active photoshop document.
-            tga_file {string} -- File name for the tga file to be generated.
+            ps_doc (com_object): The active photoshop document.
+            tga_file (string): File name for the tga file to be generated.
+
         Keyword Arguments:
-            alpha_channel {bool} -- Determines if alpha channel is included in
-                                    save (default: {False})
+            alpha_channel (bool): Determines if alpha channel is included in save (default: {False})
         """
 
         os_ver = self.check_windows_version()
@@ -1188,7 +1142,7 @@ class Main(QtGui.QMainWindow):
         https://code.activestate.com/recipes/577514-chek-if-a-number-is-a-power-of-two/
 
         Arguments:
-            num {int} -- Input value to check
+            num (int): Input value to check
 
         Returns:
             boolean -- One line calculation and returns True or False
@@ -1203,15 +1157,14 @@ class Main(QtGui.QMainWindow):
         Generates QMessageBox with OK button. Used for a detailed notification.
 
         Arguments:
-            message {string} -- string to be generated in detailed popup
+            message (string): string to be generated in detailed popup
         """
 
         popup_window = QtGui.QMessageBox()
 
         popup_window.setText('Textures Found')
         popup_window.setDetailedText(str(message))
-        popup_window.setStandardButtons(
-            QtGui.QMessageBox.Ok)
+        popup_window.setStandardButtons(QtGui.QMessageBox.Ok)
 
         popup_window.exec_()
 
@@ -1224,10 +1177,10 @@ class Main(QtGui.QMainWindow):
         is used to show the current progression.
 
         Arguments:
-            window_title {str} -- Input string name that will appear on the
+            window_title (str): Input string name that will appear on the
                                     QProgressDialog as the title of the dialog
                                     window
-            progress_length {int} -- Input integer that sets the size of the
+            progress_length (int): Input integer that sets the size of the
                                         QProgressDialog
 
         Returns:
@@ -1236,8 +1189,7 @@ class Main(QtGui.QMainWindow):
         """
 
         # Creates the QProgressDialog Window
-        progress_dialog = QtGui.QProgressDialog(
-            '', 'Cancel', 0, progress_length)
+        progress_dialog = QtGui.QProgressDialog('', 'Cancel', 0, progress_length)
 
         # Sets window title
         progress_dialog.setWindowTitle(window_title)
@@ -1256,7 +1208,7 @@ class Main(QtGui.QMainWindow):
         Generates QMessageBox with OK button. Used as a simple notification.
 
         Arguments:
-            message {string} -- string to be generated in popup
+            message (string): string to be generated in popup
         """
 
         popup_window = QtGui.QMessageBox()
@@ -1272,7 +1224,7 @@ class Main(QtGui.QMainWindow):
         If yes button is clicked close Photoshop
 
         Arguments:
-            ps_app {com_object} -- Gets current Photoshop instance
+            ps_app (com_object): Gets current Photoshop instance
         """
 
         popup_window = QtGui.QMessageBox()
@@ -1280,8 +1232,7 @@ class Main(QtGui.QMainWindow):
         popup_message = message + '\n' + 'Close Photoshop?'
 
         popup_window.setText(popup_message)
-        popup_window.setStandardButtons(
-            QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
+        popup_window.setStandardButtons(QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
 
         popup_window.setWindowFlags(QtCore.Qt.Popup)
 
